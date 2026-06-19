@@ -1,85 +1,93 @@
+# project/app/services/inventory_service.py
 from app.models.part import Part
 import re
 
 class InventoryService:
-    """Service Business Logic managing parts updates and unique checks"""
+    """Service layer validating inventory rules, brand categories, and price parameters"""
 
     @staticmethod
-    def add_part(name: str, sku: str, description: str, price: str, quantity: str, low_stock_threshold: str):
-        """Validates parameters and issues part generation"""
-        name = name.strip()
-        sku = sku.strip().upper()
-        description = description.strip()
+    def add_part(sku: str, name: str, brand: str, category: str, description: str, price: str, quantity: str, low_stock_threshold: str, image_filename: str = None):
+        """Validates and creates a new parts catalog entry"""
+        # Required validations
+        if not sku or not name or not brand or not category or not price or not quantity:
+            return {"success": False, "message": "SKU, Name, Brand, Category, Price, and Quantity are mandatory fields."}
 
-        if not name or not sku:
-            return {"success": False, "message": "Part Name and SKU are mandatory requirements."}
+        # Format checks
+        if not re.match(r"^[A-Za-z0-9\-]+$", sku):
+            return {"success": False, "message": "SKU must contain only alphanumeric characters and hyphens."}
 
-        # Check SKU alphanumeric constraint (letters, numbers, hyphens allowed)
-        if not re.match(r"^[A-Z0-9\-]+$", sku):
-            return {"success": False, "message": "SKU must contain only uppercase alphanumeric characters and hyphens."}
+        # Duplicate SKU verification
+        if Part.find_by_sku(sku):
+            return {"success": False, "message": f"Part SKU '{sku}' is already registered in the inventory."}
 
-        # Value boundary checks
         try:
-            val_price = float(price)
-            val_qty = int(quantity)
-            val_threshold = int(low_stock_threshold)
+            # Numerical boundaries checking
+            price_val = float(price)
+            qty_val = int(quantity)
+            threshold_val = int(low_stock_threshold) if low_stock_threshold else 5
 
-            if val_price < 0 or val_qty < 0 or val_threshold < 0:
-                return {"success": False, "message": "Numerical attributes must not hold negative metrics."}
+            if price_val <= 0:
+                return {"success": False, "message": "Price must be a positive number greater than zero."}
+            if qty_val < 0 or threshold_val < 0:
+                return {"success": False, "message": "Stock quantities cannot be negative."}
+
+            Part.create(
+                sku=sku,
+                name=name,
+                brand=brand,
+                category=category,
+                description=description,
+                price=price_val,
+                quantity=qty_val,
+                low_stock_threshold=threshold_val,
+                image_filename=image_filename
+            )
+            return {"success": True, "message": "Part successfully registered to inventory!"}
+
         except ValueError:
-            return {"success": False, "message": "Please input clean numerical rates for price and count limits."}
-
-        # Unique SKU constraint validation
-        existing_part = Part.find_by_sku(sku)
-        if existing_part:
-            return {"success": False, "message": f"SKU '{sku}' already exists. Catalog SKUs must be unique."}
-
-        try:
-            new_id = Part.create(name, sku, description, val_price, val_qty, val_threshold)
-            return {"success": True, "message": "Part successfully onboarded to catalog!", "part_id": new_id}
+            return {"success": False, "message": "Price must be a number, and quantities must be whole integers."}
         except Exception as e:
-            return {"success": False, "message": f"Error registering item: {str(e)}"}
+            return {"success": False, "message": f"Database failure: {str(e)}"}
 
     @staticmethod
-    def update_part(part_id: int, name: str, sku: str, description: str, price: str, quantity: str, low_stock_threshold: str):
-        """Validates updates and rewrites item parameters"""
-        name = name.strip()
-        sku = sku.strip().upper()
-        description = description.strip()
+    def update_part(part_id: int, sku: str, name: str, brand: str, category: str, description: str, price: str, quantity: str, low_stock_threshold: str, image_filename: str = None):
+        """Validates and updates an existing catalog item"""
+        if not sku or not name or not brand or not category or not price or not quantity:
+            return {"success": False, "message": "SKU, Name, Brand, Category, Price, and Quantity are mandatory fields."}
 
-        if not name or not sku:
-            return {"success": False, "message": "Name and SKU cannot be submitted empty."}
+        if not re.match(r"^[A-Za-z0-9\-]+$", sku):
+            return {"success": False, "message": "SKU format is invalid (alphanumeric and hyphens only)."}
+
+        # SKU conflict check on other records
+        existing_with_sku = Part.find_by_sku(sku)
+        if existing_with_sku and existing_with_sku['id'] != int(part_id):
+            return {"success": False, "message": f"Part SKU '{sku}' is already assigned to another catalog entry."}
 
         try:
-            val_price = float(price)
-            val_qty = int(quantity)
-            val_threshold = int(low_stock_threshold)
+            price_val = float(price)
+            qty_val = int(quantity)
+            threshold_val = int(low_stock_threshold) if low_stock_threshold else 5
 
-            if val_price < 0 or val_qty < 0 or val_threshold < 0:
-                return {"success": False, "message": "Values cannot be negative values."}
+            if price_val <= 0:
+                return {"success": False, "message": "Price must be a positive number."}
+            if qty_val < 0 or threshold_val < 0:
+                return {"success": False, "message": "Quantities cannot be negative."}
+
+            Part.update(
+                part_id=part_id,
+                sku=sku,
+                name=name,
+                brand=brand,
+                category=category,
+                description=description,
+                price=price_val,
+                quantity=qty_val,
+                low_stock_threshold=threshold_val,
+                image_filename=image_filename
+            )
+            return {"success": True, "message": "Inventory details updated successfully!"}
+
         except ValueError:
-            return {"success": False, "message": "Price and stock quantities must be valid numbers."}
-
-        # Check if new SKU clashes with another item
-        sku_part = Part.find_by_sku(sku)
-        if sku_part and sku_part['id'] != part_id:
-            return {"success": False, "message": f"SKU '{sku}' is already taken by another part inventory item."}
-
-        try:
-            Part.update(part_id, name, sku, description, val_price, val_qty, val_threshold)
-            return {"success": True, "message": "Inventory part details successfully updated!"}
+            return {"success": False, "message": "Invalid numeric parameter formats entered."}
         except Exception as e:
-            return {"success": False, "message": f"Failed updating database reference: {str(e)}"}
-
-    @staticmethod
-    def delete_part(part_id: int):
-        """Safe wrapper to handle catalog deletion logic"""
-        existing = Part.find_by_id(part_id)
-        if not existing:
-            return {"success": False, "message": "Target inventory item could not be retrieved."}
-        
-        try:
-            Part.delete(part_id)
-            return {"success": True, "message": "Part removed from catalog."}
-        except Exception as e:
-            return {"success": False, "message": f"Database cascading error: {str(e)}"}
+            return {"success": False, "message": f"Database failure: {str(e)}"}

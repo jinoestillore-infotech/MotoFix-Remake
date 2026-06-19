@@ -1,3 +1,4 @@
+<!-- project/app/templates/owner-page/inventory.html -->
 {% extends 'layouts/base.html' %}
 
 {% block title %}Inventory Catalog - MotoFix{% endblock %}
@@ -23,15 +24,23 @@
         </div>
     </div>
 
-    <!-- Controls Panel (Search and Filter Stats) -->
+    <!-- Controls Panel (Search, Category, and Stock Status Filters) -->
     <div class="row g-3 mb-4">
-        <div class="col-12 col-md-8">
+        <div class="col-12 col-md-5">
             <div class="input-group">
                 <span class="input-group-text bg-white border-end-0 text-muted"><i class="fas fa-search"></i></span>
-                <input type="text" id="searchInput" class="form-control border-start-0 ps-1" placeholder="Search by SKU, part name, or description...">
+                <input type="text" id="searchInput" class="form-control border-start-0 ps-1" placeholder="Search by SKU, part name, brand, or description...">
             </div>
         </div>
-        <div class="col-12 col-md-4">
+        <div class="col-12 col-sm-6 col-md-3">
+            <select class="form-select border-light-subtle text-dark small" id="categoryFilter">
+                <option value="all">All Categories</option>
+                {% for category in categories %}
+                <option value="{{ category }}">{{ category }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-12 col-sm-6 col-md-4">
             <select class="form-select border-light-subtle text-dark small" id="stockStatusFilter">
                 <option value="all">All Inventory Statuses</option>
                 <option value="in_stock">In Stock</option>
@@ -50,6 +59,7 @@
                     <thead>
                         <tr class="text-uppercase fs-7 text-muted border-bottom">
                             <th class="ps-4 py-3 fw-semibold">Part Details</th>
+                            <th class="py-3 fw-semibold">Brand & Category</th>
                             <th class="py-3 fw-semibold">SKU Code</th>
                             <th class="py-3 text-end fw-semibold">Price</th>
                             <th class="py-3 text-center fw-semibold">Stock Level</th>
@@ -62,27 +72,54 @@
                         {% for part in parts %}
                         {% set is_low = part.quantity <= part.low_stock_threshold %}
                         {% set is_out = part.quantity == 0 %}
-                        <tr class="part-row" data-name="{{ part.name|lower }}" data-sku="{{ part.sku|lower }}" data-desc="{{ part.description|lower }}" data-status="{% if is_out %}out_of_stock{% elif is_low %}low_stock{% else %}in_stock{% endif %}">
+                        {% set default_image = url_for('static', filename='uploads/parts/gear.jpg') %}
+                        <tr class="part-row" data-name="{{ part.name|lower }}" data-sku="{{ part.sku|lower }}" data-brand="{{ part.brand|lower }}" data-desc="{{ part.description|lower }}" data-category="{{ part.category }}" data-status="{% if is_out %}out_of_stock{% elif is_low %}low_stock{% else %}in_stock{% endif %}">
+                            <!-- Part Image & Details -->
                             <td class="ps-4 py-3">
-                                <div class="fw-bold text-dark">{{ part.name }}</div>
-                                <div class="text-muted text-truncate small" style="max-width: 250px;" title="{{ part.description }}">
-                                    {{ part.description or 'No description provided.' }}
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="border rounded-3 bg-light d-flex align-items-center justify-content-center shadow-sm text-center" style="width: 52px; height: 52px; overflow: hidden; flex-shrink: 0;">
+                                        {% if part.image_filename %}
+                                            <img src="{{ url_for('static', filename='uploads/parts/' ~ part.image_filename) }}" 
+                                                 onerror="this.onerror=null; this.src='{{ default_image }}';"
+                                                 alt="{{ part.name }}" class="img-fluid" style="object-fit: cover; width: 100%; height: 100%;">
+                                        {% else %}
+                                            <img src="{{ url_for('static', filename='uploads/parts/gear.jpg') }}" 
+                                                 onerror="this.onerror=null; this.src='https://placehold.co/100x100?text=Parts';" 
+                                                 alt="{{ part.name }}" class="img-fluid" style="object-fit: cover; width: 100%; height: 100%;">
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold text-dark">{{ part.name }}</div>
+                                        <div class="text-muted text-truncate small" style="max-width: 200px;" title="{{ part.description }}">
+                                            {{ part.description or 'No description provided.' }}
+                                        </div>
+                                    </div>
                                 </div>
                             </td>
+                            <!-- Brand & Category -->
                             <td class="py-3">
-                                <span class="badge bg-light text-dark border font-monospace px-2 py-1 fw-normal">%s{{ part.sku }}</span>
+                                <span class="badge bg-light text-dark border rounded-3 px-2 py-1 fw-semibold">{{ part.brand }}</span>
+                                <div class="text-muted small mt-1"><i class="fas fa-tags me-1 text-secondary"></i>{{ part.category }}</div>
                             </td>
+                            <!-- SKU Code -->
+                            <td class="py-3">
+                                <span class="badge bg-light text-dark border font-monospace px-2 py-1 fw-normal">{{ part.sku }}</span>
+                            </td>
+                            <!-- Price -->
                             <td class="text-end fw-bold text-dark py-3">
-                                ${{ "%.2f"|format(part.price) }}
+                                ₱{{ "{:,.2f}".format(part.price) }}
                             </td>
+                            <!-- Stock Level -->
                             <td class="text-center py-3">
                                 <span class="fw-bold {% if is_out %}text-danger{% elif is_low %}text-warning-emphasis{% else %}text-success{% endif %}">
                                     {{ part.quantity }}
                                 </span>
                             </td>
+                            <!-- Minimum Threshold -->
                             <td class="text-center text-muted small py-3">
                                 {{ part.low_stock_threshold }}
                             </td>
+                            <!-- Status Badges -->
                             <td class="text-center py-3">
                                 {% if is_out %}
                                 <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-3 py-1">Out of Stock</span>
@@ -92,6 +129,7 @@
                                 <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1">In Stock</span>
                                 {% endif %}
                             </td>
+                            <!-- Actions -->
                             <td class="pe-4 py-3 text-end">
                                 <div class="d-flex justify-content-end gap-2">
                                     <!-- Edit Trigger Button -->
@@ -135,12 +173,25 @@
                 </h5>
                 <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="{{ url_for('inventory.add') }}" method="POST" class="needs-validation" novalidate>
+            <form action="{{ url_for('inventory.add') }}" method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
                 <div class="modal-body p-4">
                     <div class="row g-3">
                         <div class="col-12">
                             <label for="add_name" class="form-label text-dark small fw-semibold">Part Name</label>
                             <input type="text" class="form-control border-light-subtle" id="add_name" name="name" placeholder="e.g. NGK Iridium Spark Plug" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="add_brand" class="form-label text-dark small fw-semibold">Brand / Manufacturer</label>
+                            <input type="text" class="form-control border-light-subtle" id="add_brand" name="brand" placeholder="e.g. NGK" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="add_category" class="form-label text-dark small fw-semibold">Category</label>
+                            <select class="form-select border-light-subtle" id="add_category" name="category" required>
+                                <option value="" selected disabled>Select Category</option>
+                                {% for category in categories %}
+                                <option value="{{ category }}">{{ category }}</option>
+                                {% endfor %}
+                            </select>
                         </div>
                         <div class="col-12">
                             <label for="add_sku" class="form-label text-dark small fw-semibold">SKU (Stock Keeping Unit)</label>
@@ -152,17 +203,20 @@
                             <textarea class="form-control border-light-subtle" id="add_desc" name="description" rows="2" placeholder="Write key specifications or dimensions..."></textarea>
                         </div>
                         <div class="col-md-6">
-                            <label for="add_price" class="form-label text-dark small fw-semibold">Unit Price ($)</label>
-                            <input type="number" step="0.01" min="0" class="form-control border-light-subtle" id="add_price" name="price" placeholder="0.00" required>
+                            <label for="add_price" class="form-label text-dark small fw-semibold">Unit Price (₱)</label>
+                            <input type="number" step="0.01" min="0.01" class="form-control border-light-subtle" id="add_price" name="price" placeholder="0.00" required>
                         </div>
-                        <div class="col-md-6">
-                            <label for="add_qty" class="form-label text-dark small fw-semibold">Starting Quantity</label>
+                        <div class="col-md-3">
+                            <label for="add_qty" class="form-label text-dark small fw-semibold">Quantity</label>
                             <input type="number" min="0" class="form-control border-light-subtle" id="add_qty" name="quantity" placeholder="0" required>
                         </div>
-                        <div class="col-12">
-                            <label for="add_threshold" class="form-label text-dark small fw-semibold">Low Stock Warning Threshold</label>
+                        <div class="col-md-3">
+                            <label for="add_threshold" class="form-label text-dark small fw-semibold">Threshold</label>
                             <input type="number" min="0" class="form-control border-light-subtle" id="add_threshold" name="low_stock_threshold" value="5" required>
-                            <div class="form-text text-muted small mt-1">Triggers an alert badge once stock reaches or drops below this number.</div>
+                        </div>
+                        <div class="col-12">
+                            <label for="add_image" class="form-label text-dark small fw-semibold">Upload Product Picture</label>
+                            <input type="file" class="form-control border-light-subtle" id="add_image" name="image" accept="image/*">
                         </div>
                     </div>
                 </div>
@@ -187,12 +241,24 @@
                     </h5>
                     <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form action="{{ url_for('inventory.edit', part_id=part.id) }}" method="POST" class="needs-validation" novalidate>
+                <form action="{{ url_for('inventory.edit', part_id=part.id) }}" method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
                     <div class="modal-body p-4">
                         <div class="row g-3">
                             <div class="col-12">
                                 <label for="edit_name{{ part.id }}" class="form-label text-dark small fw-semibold">Part Name</label>
                                 <input type="text" class="form-control border-light-subtle" id="edit_name{{ part.id }}" name="name" value="{{ part.name }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="edit_brand{{ part.id }}" class="form-label text-dark small fw-semibold">Brand / Manufacturer</label>
+                                <input type="text" class="form-control border-light-subtle" id="edit_brand{{ part.id }}" name="brand" value="{{ part.brand }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="edit_category{{ part.id }}" class="form-label text-dark small fw-semibold">Category</label>
+                                <select class="form-select border-light-subtle" id="edit_category{{ part.id }}" name="category" required>
+                                    {% for category in categories %}
+                                    <option value="{{ category }}" {% if part.category == category %}selected{% endif %}>{{ category }}</option>
+                                    {% endfor %}
+                                </select>
                             </div>
                             <div class="col-12">
                                 <label for="edit_sku{{ part.id }}" class="form-label text-dark small fw-semibold">SKU Code</label>
@@ -203,16 +269,21 @@
                                 <textarea class="form-control border-light-subtle" id="edit_desc{{ part.id }}" name="description" rows="2">{{ part.description or '' }}</textarea>
                             </div>
                             <div class="col-md-6">
-                                <label for="edit_price{{ part.id }}" class="form-label text-dark small fw-semibold">Unit Price ($)</label>
-                                <input type="number" step="0.01" min="0" class="form-control border-light-subtle" id="edit_price{{ part.id }}" name="price" value="{{ part.price }}" required>
+                                <label for="edit_price{{ part.id }}" class="form-label text-dark small fw-semibold">Unit Price (₱)</label>
+                                <input type="number" step="0.01" min="0.01" class="form-control border-light-subtle" id="edit_price{{ part.id }}" name="price" value="{{ part.price }}" required>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-3">
                                 <label for="edit_qty{{ part.id }}" class="form-label text-dark small fw-semibold">Stock Quantity</label>
                                 <input type="number" min="0" class="form-control border-light-subtle" id="edit_qty{{ part.id }}" name="quantity" value="{{ part.quantity }}" required>
                             </div>
-                            <div class="col-12">
-                                <label for="edit_threshold{{ part.id }}" class="form-label text-dark small fw-semibold">Low Stock Threshold</label>
+                            <div class="col-md-3">
+                                <label for="edit_threshold{{ part.id }}" class="form-label text-dark small fw-semibold">Threshold</label>
                                 <input type="number" min="0" class="form-control border-light-subtle" id="edit_threshold{{ part.id }}" name="low_stock_threshold" value="{{ part.low_stock_threshold }}" required>
+                            </div>
+                            <div class="col-12">
+                                <label for="edit_image{{ part.id }}" class="form-label text-dark small fw-semibold">Product Picture</label>
+                                <input type="file" class="form-control border-light-subtle" id="edit_image{{ part.id }}" name="image" accept="image/*">
+                                <small class="text-muted d-block mt-1">Leave blank to keep current photo.</small>
                             </div>
                         </div>
                     </div>
@@ -252,25 +323,35 @@
     document.addEventListener('DOMContentLoaded', function() {
         const searchInput = document.getElementById('searchInput');
         const stockFilter = document.getElementById('stockStatusFilter');
+        const categoryFilter = document.getElementById('categoryFilter');
         const rows = document.querySelectorAll('.part-row');
 
         function filterParts() {
             const searchValue = searchInput.value.toLowerCase().trim();
             const filterValue = stockFilter.value;
+            const categoryValue = categoryFilter.value;
 
             rows.forEach(row => {
                 const name = row.getAttribute('data-name');
                 const sku = row.getAttribute('data-sku');
+                const brand = row.getAttribute('data-brand');
                 const desc = row.getAttribute('data-desc');
                 const status = row.getAttribute('data-status');
+                const category = row.getAttribute('data-category');
 
+                // Match name, SKU, brand, or description
                 const matchesSearch = name.includes(searchValue) || 
                                       sku.includes(searchValue) || 
+                                      brand.includes(searchValue) ||
                                       desc.includes(searchValue);
 
+                // Match stock status
                 const matchesStatus = (filterValue === 'all') || (status === filterValue);
 
-                if (matchesSearch && matchesStatus) {
+                // Match category
+                const matchesCategory = (categoryValue === 'all') || (category === categoryValue);
+
+                if (matchesSearch && matchesStatus && matchesCategory) {
                     row.style.setProperty('display', '', 'important');
                 } else {
                     row.style.setProperty('display', 'none', 'important');
@@ -278,8 +359,9 @@
             });
         }
 
-        if(searchInput) searchInput.addEventListener('input', filterParts);
-        if(stockFilter) stockFilter.addEventListener('change', filterParts);
+        if (searchInput) searchInput.addEventListener('input', filterParts);
+        if (stockFilter) stockFilter.addEventListener('change', filterParts);
+        if (categoryFilter) categoryFilter.addEventListener('change', filterParts);
 
         var forms = document.querySelectorAll('.needs-validation')
         Array.prototype.slice.call(forms).forEach(function (form) {
