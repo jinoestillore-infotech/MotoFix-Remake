@@ -58,7 +58,7 @@
                 <i class="fa-solid fa-shop me-1"></i>
                 Storefront
             </a>
-            <a href="#">
+            <a href="{{ url_for('cart.view') }}" class="{% if request.endpoint == 'cart.view' %}active{% endif %}">
                 <i class="fa-solid fa-cart-shopping me-1"></i>
                 Cart
                 <span class="badge bg-danger rounded-pill ms-1 d-none" id="global-cart-badge">0</span>

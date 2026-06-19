@@ -4,94 +4,78 @@
 {% block title %}My Shopping Cart - MotoShop{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-    <div class="d-flex align-items-center gap-2 mb-4">
-        <a href="{{ url_for('dashboard.client_index') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
-            <i class="fa-solid fa-arrow-left me-1"></i> Continue Shopping
-        </a>
-    </div>
-
-    <h2 class="fw-bold text-dark mb-4"><i class="fa-solid fa-cart-shopping text-warning me-2"></i>My Cart</h2>
+{% set default_image = url_for('static', filename='uploads/parts/gear.jpg') %}
+<div class="container py-4 pt-2">
+    <h2 class="fw-bold text-dark mb-4">My Cart</h2>
 
     <div class="row g-4" id="cartMainContainer">
         {% if cart_items %}
-            <!-- Cart Items List (Col-lg-8) -->
-            <div class="col-12 col-lg-8">
-                <div class="card border border-light-subtle shadow-sm rounded-4 overflow-hidden mb-3">
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0" id="cartTable">
-                                <thead class="table-dark">
-                                    <tr>
-                                        <th class="ps-4 py-3 fw-semibold text-uppercase fs-8">Product Details</th>
-                                        <th class="py-3 fw-semibold text-uppercase fs-8">Price</th>
-                                        <th class="py-3 text-center fw-semibold text-uppercase fs-8" style="width: 140px;">Quantity</th>
-                                        <th class="py-3 text-end fw-semibold text-uppercase fs-8">Subtotal</th>
-                                        <th class="pe-4 py-3 text-end fw-semibold text-uppercase fs-8" style="width: 80px;">Remove</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for item in cart_items %}
-                                    {% set default_image = url_for('static', filename='uploads/parts/gear.jpg') %}
-                                        <tr class="cart-item-row" id="cart-row-{{ item.id }}" data-price="{{ item.price }}" data-stock-limit="{{ item.stock_quantity }}">
-                                            <!-- Product Details -->
-                                            <td class="ps-4 py-3">
-                                                <div class="d-flex align-items-center gap-3">
-                                                    <div class="border rounded-3 bg-light d-flex align-items-center justify-content-center shadow-sm text-center" style="width: 60px; height: 60px; overflow: hidden; flex-shrink: 0;">
-                                                        {% if item.image_filename %}
-                                                            <img src="{{ url_for('static', filename='uploads/parts/' ~ item.image_filename) }}" 
-                                                                 onerror="this.onerror=null; this.src='{{ default_image }}';"  
-                                                                 alt="{{ item.name }}" class="img-fluid" style="object-fit: cover; width: 100%; height: 100%;">
-                                                        {% else %}
-                                                            <img src="{{ url_for('static', filename='uploads/parts/gear.jpg') }}" 
-                                                                 onerror="this.onerror=null; this.src='https://placehold.co/100x100?text=Parts';" 
-                                                                 alt="{{ item.name }}" class="img-fluid" style="object-fit: cover; width: 100%; height: 100%;">
-                                                        {% endif %}
-                                                    </div>
-                                                    <div>
-                                                        <div class="fw-bold text-dark">{{ item.name }}</div>
-                                                        <span class="badge bg-light text-secondary border rounded-pill px-2.5 py-1 small mt-1 font-monospace">{{ item.sku }}</span>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            
-                                            <!-- Unit Price -->
-                                            <td class="py-3 text-secondary fw-semibold">
-                                                ₱{{ "{:,.2f}".format(item.price) }}
-                                            </td>
-                                            
-                                            <!-- Quantity Controls -->
-                                            <td class="py-3 text-center">
-                                                <div class="input-group input-group-sm border rounded-pill overflow-hidden shadow-none mx-auto" style="width: 110px;">
-                                                    <button class="btn btn-light border-0 px-2.5 qty-btn shadow-none" type="button" onclick="adjustQty('{{ item.id }}', -1)">
-                                                        <i class="fa-solid fa-minus text-muted"></i>
-                                                    </button>
-                                                    <input type="text" id="qty-input-{{ item.id }}" class="form-control border-0 text-center bg-white shadow-none fw-bold text-dark" value="{{ item.quantity }}" readonly>
-                                                    <button class="btn btn-light border-0 px-2.5 qty-btn shadow-none" type="button" onclick="adjustQty('{{ item.id }}', 1)">
-                                                        <i class="fa-solid fa-plus text-muted"></i>
-                                                    </button>
-                                                </div>
-                                                <small class="text-muted d-block mt-1 font-monospace" style="font-size: 0.7rem;">Stock: {{ item.stock_quantity }}</small>
-                                            </td>
-                                            
-                                            <!-- Subtotal -->
-                                            <td class="py-3 text-end fw-extrabold text-dark tracking-tight item-subtotal" id="subtotal-{{ item.id }}">
-                                                ₱{{ "{:,.2f}".format(item.price * item.quantity) }}
-                                            </td>
-                                            
-                                            <!-- Delete Button -->
-                                            <td class="pe-4 py-3 text-end">
-                                                <button class="btn btn-outline-danger btn-sm rounded-circle p-0 d-inline-flex align-items-center justify-content-center" style="width: 32px; height: 32px;" onclick="removeCartItem('{{ item.id }}')" title="Remove Item">
-                                                    <i class="fa-solid fa-trash small"></i>
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+            <!-- Cart Items Stack (Col-lg-8) -->
+            <div class="col-12 col-lg-8" id="cartItemsContainer">
+                {% for item in cart_items %}
+                    <div class="card border border-light-subtle shadow-sm rounded-4 p-3 mb-3 cart-item-row position-relative" id="cart-row-{{ item.id }}" data-price="{{ item.price }}" data-stock-limit="{{ item.stock_quantity }}">
+                        <div class="d-flex flex-column flex-md-row align-items-center gap-3">
+                            <!-- Product Image -->
+                            <div class="border rounded-3 bg-light d-flex align-items-center justify-content-center shadow-sm text-center" style="width: 80px; height: 80px; overflow: hidden; flex-shrink: 0;">
+                                {% if item.image_filename %}
+                                    <img src="{{ url_for('static', filename='uploads/parts/' ~ item.image_filename) }}" 
+                                         onerror="this.onerror=null; this.src='{{ default_image }}';" 
+                                         alt="{{ item.name }}" class="img-fluid" style="object-fit: cover; width: 100%; height: 100%;">
+                                {% else %}
+                                    <img src="{{ url_for('static', filename='uploads/parts/gear.jpg') }}" 
+                                         onerror="this.onerror=null; this.src='https://placehold.co/100x100?text=Parts';" 
+                                         alt="{{ item.name }}" class="img-fluid" style="object-fit: cover; width: 100%; height: 100%;">
+                                {% endif %}
+                            </div>
+
+                            <!-- Product Details -->
+                            <div class="flex-grow-1 text-center text-md-start">
+                                <h5 class="fw-bold text-dark mb-1">{{ item.name }}</h5>
+                                <span class="badge bg-light text-secondary border rounded-pill px-2.5 py-1 small font-monospace">{{ item.sku }}</span>
+                                <div class="text-muted small mt-2 d-md-none">Unit Price: ₱{{ "{:,.2f}".format(item.price) }}</div>
+                            </div>
+
+                            <!-- Price Column (Desktop Only) -->
+                            <div class="d-none d-md-block text-end px-3">
+                                <small class="text-muted d-block text-uppercase fs-9 mb-1">Price</small>
+                                <span class="fw-bold text-secondary">₱{{ "{:,.2f}".format(item.price) }}</span>
+                            </div>
+
+                            <!-- Quantity Controls -->
+                            <div class="text-center px-3" style="min-width: 130px;">
+                                <small class="text-muted d-block text-uppercase fs-9 mb-1">Quantity</small>
+                                <div class="input-group input-group-sm border rounded-pill overflow-hidden shadow-none mx-auto" style="width: 110px;">
+                                    <button class="btn btn-light border-0 px-2.5 qty-btn shadow-none" type="button" onclick="adjustQty('{{ item.id }}', -1)">
+                                        <i class="fa-solid fa-minus text-muted"></i>
+                                    </button>
+                                    <input type="text" id="qty-input-{{ item.id }}" class="form-control border-0 text-center bg-white shadow-none fw-bold text-dark" value="{{ item.quantity }}" readonly>
+                                    <button class="btn btn-light border-0 px-2.5 qty-btn shadow-none" type="button" onclick="adjustQty('{{ item.id }}', 1)">
+                                        <i class="fa-solid fa-plus text-muted"></i>
+                                    </button>
+                                </div>
+                                <small class="text-muted d-block mt-1 font-monospace" style="font-size: 0.7rem;">Available: {{ item.stock_quantity }}</small>
+                            </div>
+
+                            <!-- Subtotal Column -->
+                            <div class="text-center text-md-end px-3" style="min-width: 120px;">
+                                <small class="text-muted d-block text-uppercase fs-9 mb-1">Subtotal</small>
+                                <span class="fs-5 fw-extrabold text-dark tracking-tight item-subtotal" id="subtotal-{{ item.id }}">
+                                    ₱{{ "{:,.2f}".format(item.price * item.quantity) }}
+                                </span>
+                            </div>
+
+                            <!-- Delete Trigger Button -->
+                            <div class="text-end ps-2 align-self-center align-self-md-center mt-3 mt-md-0">
+                                <button class="d-none d-md-block  btn btn-outline-danger btn-sm rounded-circle p-0 d-inline-flex align-items-center justify-content-center" style="width: 36px; height: 36px;" data-bs-toggle="modal" data-bs-target="#deleteCartItemModal" data-item-id="{{ item.id }}" title="Remove Item">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                                <button class="d-block d-md-none btn btn-outline-danger btn-sm rounded-2 p-2 d-inline-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#deleteCartItemModal" data-item-id="{{ item.id }}" title="Remove Item">
+                                    Remove to Cart
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
+                {% endfor %}
             </div>
 
             <!-- Order Summary Section (Col-lg-4) -->
@@ -112,12 +96,12 @@
                         <hr class="border-light-subtle my-3">
                         <div class="d-flex justify-content-between align-items-baseline mb-4">
                             <span class="text-dark fw-bold">Estimated Total</span>
-                            <span class="fs-4 fw-extrabold text-danger tracking-tight" id="orderTotal">₱0.00</span>
+                            <span class="fs-4 fw-extrabold text-dark tracking-tight" id="orderTotal">₱0.00</span>
                         </div>
 
                         <div class="d-grid gap-2">
-                            <button class="btn btn-dark btn-lg rounded-pill fw-bold fs-6 shadow-sm py-2.5" onclick="proceedToCheckout()">
-                                <i class="fa-solid fa-credit-card me-2 text-warning"></i>Proceed to Checkout
+                            <button class="btn btn-warning btn-lg rounded-pill fw-bold fs-6 shadow-sm py-2.5" onclick="proceedToCheckout()">
+                                Proceed to Checkout
                             </button>
                         </div>
                     </div>
@@ -139,9 +123,53 @@
     </div>
 </div>
 
+<!-- Modal: Confirm Delete Cart Item -->
+<div class="modal fade" id="deleteCartItemModal" tabindex="-1" aria-labelledby="deleteCartItemModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 rounded-4 shadow-lg">
+            <div class="modal-body p-4 text-center">
+                <div class="text-danger mb-3">
+                    <i class="fa-solid fa-circle-exclamation fa-3x"></i>
+                </div>
+                <h5 class="fw-bold text-dark mb-2">Remove Item?</h5>
+                <p class="text-muted small mb-0">Are you sure you want to remove this item from your cart?</p>
+            </div>
+            <div class="modal-footer border-0 d-flex justify-content-center gap-2 pb-4 pt-0">
+                <button type="button" class="btn btn-light rounded-pill fw-semibold px-3 animate-btn-hover" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger rounded-pill fw-bold px-3 animate-btn-hover" id="confirmDeleteBtn">Remove</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
+    let itemToDelete = null;
+    let deleteModalInstance = null;
+
     document.addEventListener('DOMContentLoaded', function() {
         calculateCartTotals();
+
+        // Initialize the custom Bootstrap delete modal
+        const deleteModalEl = document.getElementById('deleteCartItemModal');
+        if (deleteModalEl) {
+            deleteModalInstance = new bootstrap.Modal(deleteModalEl);
+            
+            // Capture target item ID when the modal starts to display
+            deleteModalEl.addEventListener('show.bs.modal', function(event) {
+                const button = event.relatedTarget;
+                itemToDelete = button.getAttribute('data-item-id');
+            });
+        }
+
+        // Bind confirmation click action to execution routine
+        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+        if (confirmDeleteBtn) {
+            confirmDeleteBtn.addEventListener('click', function() {
+                if (itemToDelete) {
+                    executeCartItemRemoval(itemToDelete);
+                }
+            });
+        }
     });
 
     // Helper to format numbers back to currency standard
@@ -193,7 +221,12 @@
 
         // Visual and state boundaries
         if (newQty < 1) {
-            removeCartItem(itemId);
+            // Trigger the confirmation modal instead of standard confirm dialog
+            const deleteTriggerBtn = row.querySelector('[data-bs-target="#deleteCartItemModal"]');
+            if (deleteTriggerBtn && deleteModalInstance) {
+                itemToDelete = itemId;
+                deleteModalInstance.show();
+            }
             return;
         }
 
@@ -224,9 +257,12 @@
         });
     }
 
-    // AJAX Action to remove single product from cart pool
-    function removeCartItem(itemId) {
-        if (!confirm("Are you sure you want to remove this item from your cart?")) return;
+    // AJAX Action to execute single product removal from cart pool
+    function executeCartItemRemoval(itemId) {
+        // Hide modal
+        if (deleteModalInstance) {
+            deleteModalInstance.hide();
+        }
 
         fetch('/cart/remove', {
             method: 'POST',
