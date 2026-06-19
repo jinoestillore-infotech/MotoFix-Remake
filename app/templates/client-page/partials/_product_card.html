@@ -77,8 +77,8 @@
                                 data-part-name="{{ part.name }}">
                             Add to Cart
                         </button>
-                        <a href="#" class="btn btn-dark btn-sm rounded-pill fw-bold transition-all buy-btn py-1.5">
-                            Buy
+                        <a href="{{ url_for('checkout.view', buy_now_id=part.id, buy_now_qty=1) }}" class="btn btn-dark btn-sm w-100 rounded-pill fw-bold text-warning text-nowrap">
+                            Buy Now
                         </a>
                     {% endif %}
                 </div>

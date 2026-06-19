@@ -1,0 +1,368 @@
+{% extends 'layouts/client-base.html' %}
+
+{% block title %}Checkout - MotoShop{% endblock %}
+
+{% block content %}
+{% set default_image = url_for('static', filename='uploads/parts/gear.jpg') %}
+
+<style>
+    .cursor-pointer { cursor: pointer; }
+    .transition-all { transition: all 0.2s ease-in-out; }
+    .fs-7 { font-size: 0.875rem; }
+    .fs-9 { font-size: 0.75rem; }
+    .fw-extrabold { font-weight: 800; }
+    
+    /* Interactive card custom styling for fulfillment radio options */
+    .fulfillment-card {
+        border: 2px solid #dee2e6;
+        position: relative;
+    }
+    .fulfillment-card:hover {
+        border-color: #ffc107;
+    }
+    .form-check-input:checked ~ .fulfillment-card-label {
+        color: #212529;
+    }
+</style>
+
+<div class="container py-4">
+    <h2 class="fw-bold text-dark mb-4">Checkout Payment</h2>
+
+    <form action="{{ url_for('checkout.place') }}" method="POST" class="needs-validation" novalidate id="checkoutForm">
+        {% if is_direct_buy %}
+            <input type="hidden" name="buy_now_id" id="directPartId" value="{{ direct_part_id }}">
+            <input type="hidden" name="buy_now_qty" id="directQtyInput" value="{{ direct_qty }}">
+        {% endif %}
+
+        <div class="row g-4">
+            <div class="col-12 col-lg-7">
+                <div class="card border border-light-subtle shadow-sm rounded-4 mb-4">
+                    <div class="card-header bg-dark text-white py-3 border-0">
+                        <h5 class="fw-bold mb-0 text-uppercase tracking-wider fs-7">
+                            <i class="fa-solid fa-user me-2 text-warning"></i>Shipment & Fulfillment
+                        </h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label text-dark small fw-semibold">Customer Full Name</label>
+                                <input type="text" class="form-control border-light-subtle" name="full_name" value="{{ customer.first_name }} {{ customer.last_name }}" required>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label text-dark small fw-semibold">Contact Phone Number</label>
+                                <input type="tel" class="form-control border-light-subtle" name="phone" value="{{ customer.phone or '' }}" placeholder="09xxxxxxxxx" required>
+                            </div>
+
+                            <div class="col-12 my-3">
+                                <label class="form-label text-dark small fw-semibold d-block mb-2">Fulfillment Choice</label>
+                                <div class="row g-3">
+                                    <div class="col-12 col-sm-6">
+                                        <div class="form-check p-0 position-relative">
+                                            <input class="form-check-input position-absolute top-50 start-0 translate-middle-y ms-3" style="z-index: 2;" type="radio" name="fulfillment_method" id="fulfillment_pickup" value="pickup" checked onclick="toggleFulfillment('pickup')">
+                                            <label class="form-check-label d-block border rounded-3 p-3 ps-5 bg-light transition-all cursor-pointer fulfillment-card" for="fulfillment_pickup">
+                                                <span class="fw-bold text-dark d-block mb-1">
+                                                    <i class="fa-solid fa-store text-warning me-1"></i> Store Pickup
+                                                </span>
+                                                <small class="text-muted d-block fs-9">Collect at MotoShop depot with free technician guidance.</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 col-sm-6">
+                                        <div class="form-check p-0 position-relative">
+                                            <input class="form-check-input position-absolute top-50 start-0 translate-middle-y ms-3" style="z-index: 2;" type="radio" name="fulfillment_method" id="fulfillment_delivery" value="delivery" onclick="toggleFulfillment('delivery')">
+                                            <label class="form-check-label d-block border rounded-3 p-3 ps-5 bg-light transition-all cursor-pointer fulfillment-card" for="fulfillment_delivery">
+                                                <span class="fw-bold text-dark d-block mb-1">
+                                                    <i class="fa-solid fa-truck text-warning me-1"></i> Home Delivery
+                                                </span>
+                                                <small class="text-muted d-block fs-9">Ship original parts straight to your doorstep address.</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-12 d-none" id="deliveryAddressSection">
+                                <label class="form-label text-dark small fw-semibold">Complete Delivery Address</label>
+                                <textarea class="form-control border-light-subtle" id="deliveryAddressInput" name="address" rows="2" placeholder="House/Unit Number, Street, Barangay, City, Province"></textarea>
+                            </div>
+
+                            <div class="col-12 mt-3">
+                                <label class="form-label text-dark small fw-semibold">
+                                    <i class="fa-solid fa-comment-dots text-secondary me-1"></i>Leave a Note for the Shop Owner
+                                </label>
+                                <textarea class="form-control border-light-subtle" name="notes" rows="3" placeholder="Add specific details (e.g., motorcycle brand and model year, parts installation requests, or pickup instructions)..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border border-light-subtle shadow-sm rounded-4 mb-4">
+                    <div class="card-header bg-dark text-white py-3 border-0">
+                        <h5 class="fw-bold mb-0 text-uppercase tracking-wider fs-7">
+                            <i class="fa-solid fa-wallet me-2 text-warning"></i>Select Payment Method
+                        </h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <ul class="nav nav-pills nav-fill border rounded-pill p-1 bg-light mb-4" id="paymentTabs" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link rounded-pill active text-dark fw-bold w-100" id="tab-cod" data-bs-toggle="tab" data-bs-target="#panel-cod" type="button" onclick="selectPayment('cod')">
+                                            <i class="fa-solid fa-hand-holding-dollar me-1"></i> COD / Counter
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link rounded-pill text-dark fw-bold w-100" id="tab-gcash" data-bs-toggle="tab" data-bs-target="#panel-gcash" type="button" onclick="selectPayment('gcash')">
+                                            <i class="fa-solid fa-mobile-screen-button me-1"></i> GCash / Maya
+                                        </button>
+                                    </li>
+                                </ul>
+
+                                <input type="hidden" name="payment_method" id="selectedPaymentMethod" value="cod">
+
+                                <div class="tab-content border-0 p-2" id="paymentTabContent">
+                                    <div class="tab-pane fade show active" id="panel-cod" role="tabpanel">
+                                        <div class="p-3 border rounded-3 bg-light">
+                                            <h6 class="fw-bold text-dark"><i class="fa-solid fa-check-double text-success me-1"></i>Pay on Pickup or Delivery (COD)</h6>
+                                            <p class="text-muted small mb-0">For store pickups, settle your transaction in cash or card over our counter during collection. For Home Deliveries, pay cash directly to the rider once the parcel arrives.</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="tab-pane fade" id="panel-gcash" role="tabpanel">
+                                        <div class="p-3 border rounded-3 bg-light text-center">
+                                            <h6 class="fw-bold text-dark text-start mb-2"><i class="fa-solid fa-qrcode text-primary me-1"></i>Digital QR Payment</h6>
+                                            <div class="my-3 mx-auto border p-3 rounded-4 bg-white shadow-sm" style="max-width: 140px; aspect-ratio: 1/1;">
+                                                <i class="fa-solid fa-qrcode fa-5x text-dark"></i>
+                                            </div>
+                                            <p class="text-dark small fw-bold mb-1">GCash Account: MotoShop Parts Admin</p>
+                                            <p class="text-dark small font-monospace mb-2">Number: 0917-888-2918</p>
+                                            <small class="text-muted d-block fs-9">Send exactly your order total, copy the transaction Ref ID, or write it inside your order note below for confirmation.</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-lg-5">
+                <div class="card border border-light-subtle shadow-sm rounded-4 overflow-hidden position-sticky" style="top: 20px;">
+                    <div class="card-header bg-dark text-white py-3 border-0">
+                        <h5 class="fw-bold mb-0 text-uppercase tracking-wider fs-7">
+                            <i class="fa-solid fa-list-check me-2 text-warning"></i>Order Review
+                        </h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="mb-4" id="orderReviewItemsList" style="max-height: 320px; overflow-y: auto;">
+                            {% for item in items %}
+                                <div class="d-flex align-items-center gap-2 gap-sm-3 py-3 border-bottom border-light-subtle checkout-item-row" 
+                                     id="checkout-row-{{ item.id if not is_direct_buy else direct_part_id }}" 
+                                     data-price="{{ item.price }}" 
+                                     data-stock-limit="{{ item.stock_quantity if item.stock_quantity is defined else 99 }}">
+                                    
+                                    <div class="border rounded-3 bg-light d-flex align-items-center justify-content-center shadow-sm text-center" style="width: 50px; height: 50px; overflow: hidden; flex-shrink: 0;">
+                                        {% if item.image_filename %}
+                                            <img src="{{ url_for('static', filename='uploads/parts/' ~ item.image_filename) }}" 
+                                                 onerror="this.onerror=null; this.src='{{ default_image }}';"
+                                                 alt="{{ item.name }}" class="img-fluid" style="object-fit: cover; width: 100%; height: 100%;">
+                                        {% else %}
+                                            <img src="{{ url_for('static', filename='uploads/parts/gear.jpg') }}" 
+                                                 onerror="this.onerror=null; this.src='https://placehold.co/100x100?text=Parts';" 
+                                                 alt="{{ item.name }}" class="img-fluid" style="object-fit: cover; width: 100%; height: 100%;">
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="flex-grow-1 min-w-0">
+                                        <div class="fw-bold text-dark text-truncate small" title="{{ item.name }}">{{ item.name }}</div>
+                                        <small class="text-muted d-block font-monospace fs-9 mb-1 text-truncate">{{ item.sku }}</small>
+                                        
+                                        <div class="input-group input-group-sm border rounded-pill overflow-hidden shadow-none mt-1" style="width: 90px; height: 24px;">
+                                            <button class="btn btn-light border-0 p-0 px-2 shadow-none" type="button" onclick="changeCheckoutQty('{{ item.id if not is_direct_buy else direct_part_id }}', -1)">
+                                                <i class="fa-solid fa-minus text-muted" style="font-size: 0.65rem;"></i>
+                                            </button>
+                                            <input type="text" id="checkout-qty-{{ item.id if not is_direct_buy else direct_part_id }}" class="form-control border-0 text-center bg-white shadow-none fw-bold text-dark p-0 small" value="{{ item.quantity }}" readonly style="font-size: 0.75rem;">
+                                            <button class="btn btn-light border-0 p-0 px-2 shadow-none" type="button" onclick="changeCheckoutQty('{{ item.id if not is_direct_buy else direct_part_id }}', 1)">
+                                                <i class="fa-solid fa-plus text-muted" style="font-size: 0.65rem;"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="text-end flex-shrink-0" style="min-width: 85px;">
+                                        <div class="fw-bold text-dark small static-item-subtotal" id="checkout-subtotal-{{ item.id if not is_direct_buy else direct_part_id }}">
+                                            ₱{{ "{:,.2f}".format(item.price * item.quantity) }}
+                                        </div>
+                                        <small class="text-muted d-block fs-9">₱{{ "{:,.2f}".format(item.price) }} each</small>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-secondary small fw-medium">Items Subtotal</span>
+                            <span class="text-dark fw-bold" id="checkoutSubtotalDisplay">₱0.00</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-secondary small fw-medium">Shipping Charge</span>
+                            <span class="text-success small fw-bold">FREE</span>
+                        </div>
+                        <hr class="border-light-subtle my-3">
+                        <div class="d-flex justify-content-between align-items-baseline mb-4">
+                            <span class="text-dark fw-bold">Grand Checkout Total</span>
+                            <span class="fs-4 fw-extrabold text-danger tracking-tight" id="checkoutGrandTotalDisplay">₱0.00</span>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-dark btn-lg rounded-pill fw-bold py-2.5 shadow-sm">
+                                <i class="fa-solid fa-clipboard-check me-2 text-warning"></i>Place Order Securely
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+    const isDirectBuyFlow = {{ 'true' if is_direct_buy else 'false' }};
+
+    function toggleFulfillment(method) {
+        const addressSection = document.getElementById('deliveryAddressSection');
+        const addressInput = document.getElementById('deliveryAddressInput');
+        
+        if (method === 'delivery') {
+            addressSection.classList.remove('d-none');
+            addressInput.setAttribute('required', 'required');
+        } else {
+            addressSection.classList.add('d-none');
+            addressInput.removeAttribute('required');
+            addressInput.value = '';
+        }
+    }
+
+    function selectPayment(method) {
+        document.getElementById('selectedPaymentMethod').value = method;
+        
+        const tabCod = document.getElementById('tab-cod');
+        const tabGcash = document.getElementById('tab-gcash');
+
+        [tabCod, tabGcash].forEach(tab => {
+            if (tab) {
+                tab.classList.remove('bg-dark', 'text-white');
+                tab.classList.add('text-dark');
+            }
+        });
+
+        const activeTab = document.getElementById('tab-' + method);
+        if (activeTab) {
+            activeTab.classList.remove('text-dark');
+            activeTab.classList.add('bg-dark', 'text-white');
+        }
+    }
+
+    function formatPHP(number) {
+        return "₱" + number.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function recalculateCheckoutTotals() {
+        const rows = document.querySelectorAll('.checkout-item-row');
+        let orderTotal = 0;
+
+        rows.forEach(row => {
+            const price = parseFloat(row.getAttribute('data-price'));
+            const targetId = row.id.replace('checkout-row-', '');
+            const qtyInput = document.getElementById('checkout-qty-' + targetId);
+            
+            if (qtyInput) {
+                const currentQty = parseInt(qtyInput.value);
+                const computedSubtotal = price * currentQty;
+                orderTotal += computedSubtotal;
+
+                const subtotalDisplay = document.getElementById('checkout-subtotal-' + targetId);
+                if (subtotalDisplay) {
+                    subtotalDisplay.textContent = formatPHP(computedSubtotal);
+                }
+            }
+        });
+
+        document.getElementById('checkoutSubtotalDisplay').textContent = formatPHP(orderTotal);
+        document.getElementById('checkoutGrandTotalDisplay').textContent = formatPHP(orderTotal);
+    }
+
+    function changeCheckoutQty(itemId, delta) {
+        const row = document.getElementById('checkout-row-' + itemId);
+        const qtyInput = document.getElementById('checkout-qty-' + itemId);
+        if (!row || !qtyInput) return;
+
+        const maxLimit = parseInt(row.getAttribute('data-stock-limit'));
+        let currentQty = parseInt(qtyInput.value);
+        let dynamicQty = currentQty + delta;
+
+        if (dynamicQty < 1) {
+            if(window.showSystemToast) {
+                window.showSystemToast("Quantity cannot be lower than 1 item.", false);
+            } else {
+                alert("Quantity cannot be lower than 1 item.");
+            }
+            return;
+        }
+
+        if (dynamicQty > maxLimit) {
+            if(window.showSystemToast) {
+                window.showSystemToast(`Only ${maxLimit} units available in inventory stock.`, false);
+            } else {
+                alert(`Only ${maxLimit} units available in inventory stock.`);
+            }
+            return;
+        }
+
+        if (isDirectBuyFlow) {
+            qtyInput.value = dynamicQty;
+            const directQtyHidden = document.getElementById('directQtyInput');
+            if (directQtyHidden) directQtyHidden.value = dynamicQty;
+            
+            const cleanUrl = new URL(window.location.href);
+            cleanUrl.searchParams.set('buy_now_qty', dynamicQty);
+            window.history.replaceState({}, '', cleanUrl);
+            
+            recalculateCheckoutTotals();
+        } else {
+            fetch('/cart/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ item_id: itemId, quantity: dynamicQty })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    qtyInput.value = dynamicQty;
+                    recalculateCheckoutTotals();
+                    if (window.refreshCartBadge) window.refreshCartBadge();
+                } else {
+                    if(window.showSystemToast) window.showSystemToast(data.message, false);
+                }
+            })
+            .catch(err => {
+                console.error("Cart update error:", err);
+            });
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        selectPayment('cod');
+        recalculateCheckoutTotals();
+        
+        var forms = document.querySelectorAll('.needs-validation');
+        Array.prototype.slice.call(forms).forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}MotoParts & Appointments{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        main {
+            flex: 1 0 auto;
+        }
+
+        .shop-header .container {
+            display: flex;
+            gap: 1rem;
+            padding: 0.75rem 1rem;
+
+            /* Makes it responsive */
+            overflow-x: auto;
+            white-space: nowrap;
+
+            scrollbar-width: none;
+        }
+
+        .shop-header .container::-webkit-scrollbar {
+            display: none;
+        }
+
+        .shop-header a {
+            color: #495057;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 0.4rem 0.75rem;
+            border-radius: 999px;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .shop-header a:hover,
+        .shop-header a.active {
+            background: #212529;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <!-- Global Notification Toast Container (Top Right Stacking Position) -->
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1080; margin-top: 15px; width: 350px;">
+        
+        <!-- Render Flask Flashed Messages as Toast Alerts -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    {% set is_danger = (category == 'danger' or category == 'error') %}
+                    <div class="toast align-items-center text-white {% if is_danger %}bg-danger{% else %}bg-dark{% endif %} border-0 rounded-3 shadow mb-2" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="4000">
+                        <div class="d-flex">
+                            <div class="toast-body d-flex align-items-center">
+                                {% if category == 'success' %}
+                                    <i class="fa-solid fa-circle-check text-success me-2 fs-5"></i>
+                                {% elif is_danger %}
+                                    <i class="fa-solid fa-circle-exclamation text-white me-2 fs-5"></i>
+                                {% else %}
+                                    <i class="fa-solid fa-circle-info text-info me-2 fs-5"></i>
+                                {% endif %}
+                                <span class="fw-medium">{{ message }}</span>
+                            </div>
+                            <button type="button" class="btn-close btn-close-white m-auto me-2" data-bs-dismiss="toast" aria-label="Close"></button>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Dynamic Cart Action AJAX Toast Element -->
+        <div id="cartToast" class="toast align-items-center text-white bg-dark border-0 rounded-3 shadow mb-2" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body d-flex align-items-center">
+                    <i class="fa-solid fa-circle-check text-success me-2 fs-5" id="toast-icon"></i>
+                    <span id="toast-message">Message text goes here.</span>
+                </div>
+                <button type="button" class="btn-close btn-close-white m-auto me-2" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+
+    <main class="py-1">
+        <div class="container">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const badge = document.getElementById('global-cart-badge');
+    const toastEl = document.getElementById('cartToast');
+    const toastMessage = document.getElementById('toast-message');
+    const toastIcon = document.getElementById('toast-icon');
+    
+    // Initialize Flask Flash Toasts (Autohide enabled)
+    const toastList = [].slice.call(document.querySelectorAll('.toast:not(#cartToast)'))
+        .map(function (toastNode) {
+            const toast = new bootstrap.Toast(toastNode);
+            toast.show();
+            return toast;
+        });
+
+    // Initialize Global Dynamic Action Toast
+    let bootstrapToast = null;
+    if (toastEl) {
+        bootstrapToast = new bootstrap.Toast(toastEl, { delay: 3000 });
+    }
+
+    // Function to show a clean system notification
+    window.showSystemToast = function(message, isSuccess = true) {
+        if (!toastMessage || !bootstrapToast) return;
+        toastMessage.textContent = message;
+        if (isSuccess) {
+            toastIcon.className = "fa-solid fa-circle-check text-success me-2 fs-5";
+            toastEl.className = "toast align-items-center text-white bg-dark border-0 rounded-3 shadow mb-2";
+        } else {
+            toastIcon.className = "fa-solid fa-circle-exclamation text-white me-2 fs-5";
+            toastEl.className = "toast align-items-center text-white bg-danger border-0 rounded-3 shadow mb-2";
+        }
+        bootstrapToast.show();
+    };
+
+    // Function to load cart count live
+    window.refreshCartBadge = function() {
+        fetch('/cart/count')
+            .then(res => res.json())
+            .then(data => {
+                if (badge) {
+                    if (data.cart_count > 0) {
+                        badge.textContent = data.cart_count;
+                        badge.classList.remove('d-none');
+                    } else {
+                        badge.classList.add('d-none');
+                    }
+                }
+            })
+            .catch(err => console.error("Error updating cart counts:", err));
+    };
+
+    // Initial count update
+    refreshCartBadge();
+});
+
+// Auto-dismiss the mobile sliding helper hint banner
+setTimeout(() => {
+    document.querySelectorAll('.note-disappear').forEach(alert => {
+        alert.classList.add('fade');
+        setTimeout(() => {
+            alert.remove();
+        }, 150);
+    });
+}, 4000);
+</script>
+</body>
+</html>
