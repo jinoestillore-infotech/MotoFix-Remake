@@ -48,4 +48,11 @@ class DashboardController:
     @staticmethod
     def client_index():
         """Renders client storefront and appointment portal"""
-        return render_template('client-page/index.html')
+        try:
+            parts = Part.find_all()
+        except Exception as e:
+            print(f"Error fetching client parts catalog: {e}")
+            parts = []
+            
+        categories = ['Engine', 'Brakes', 'Suspension', 'Tires & Wheels', 'Electrical', 'Body & Frame', 'Fluids & Lubes', 'Accessories']
+        return render_template('client-page/index.html', parts=parts, categories=categories)

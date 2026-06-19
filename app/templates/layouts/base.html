@@ -30,11 +30,11 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto align-items-center">
+                <ul class="navbar-nav ms-auto align-items-end justify-content-end">
                     {% if session.get('user_id') %}
                         <li class="nav-item">
                             <span class="nav-link text-white-50 me-2">
-                                <span class="badge bg-success fw-normal text-capitalize px-2">{{ session.get('role_name') }}</span>
+                                <span class="badge bg-success fw-normal text-capitalize px-2">{{ session.get('first_name') }}</span>
                             </span>
                         </li>
                         <li class="nav-item">
