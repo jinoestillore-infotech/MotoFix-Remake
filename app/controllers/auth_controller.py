@@ -1,4 +1,4 @@
-from flask import render_template, request, redirect, url_for, flash
+from flask import render_template, request, redirect, url_for, flash, session
 from app.services.auth_service import AuthService
 from app.classes.Authentication import Authentication
 
@@ -76,8 +76,7 @@ class AuthController:
     @staticmethod
     def redirect_by_role():
         """Helper router that routes authenticated users directly to distinct panels"""
-        import flask
-        role_name = flask.session.get('role_name')
+        role_name = session.get('role_name')
         
         if role_name == 'Owner':
             return redirect(url_for('dashboard.owner_dashboard'))
