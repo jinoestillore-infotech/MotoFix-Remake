@@ -67,6 +67,35 @@ class AuthController:
             return redirect(url_for('auth.register'))
 
     @staticmethod
+    def handle_mechanic_onboard():
+        """POST handler allowing Owners to onboard a Mechanic (Role ID: 2)"""
+        role_id = 2 # Securely locked to Mechanic inside this specific administrative controller action
+        
+        first_name = request.form.get('first_name', '').strip()
+        last_name = request.form.get('last_name', '').strip()
+        email = request.form.get('email', '').strip()
+        phone = request.form.get('phone', '').strip()
+        password = request.form.get('password', '')
+        confirm_password = request.form.get('confirm_password', '')
+
+        result = AuthService.register_user(
+            role_id=role_id,
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            phone=phone,
+            password=password,
+            confirm_password=confirm_password
+        )
+
+        if result['success']:
+            flash("Mechanic registered successfully!", "success")
+        else:
+            flash(result['message'], "danger")
+            
+        return redirect(url_for('dashboard.owner_dashboard'))
+
+    @staticmethod
     def logout():
         """Logout controller session flush"""
         Authentication.logout_user()
