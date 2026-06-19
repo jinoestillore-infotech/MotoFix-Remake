@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}MotoParts & Appointments{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        main {
+            flex: 1 0 auto;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark py-3 border-bottom border-secondary shadow-sm">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="/">
+                <i class="fa-solid fa-motorcycle text-warning me-2 fs-4"></i>
+                <span class="fw-bold text-uppercase tracking-tight">Moto<span class="text-warning">Shop</span></span>
+            </a>
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    {% if session.get('user_id') %}
+                        <li class="nav-item">
+                            <span class="nav-link text-white-50 me-3">
+                                <i class="fa-solid fa-user-circle me-1 text-warning"></i> Hello, {{ session.get('first_name') }} <span class="badge bg-secondary ms-1 fw-normal text-capitalize">{{ session.get('role_name') }}</span>
+                            </span>
+                        </li>
+                        <li class="nav-item">
+                            <a class="btn btn-outline-danger btn-sm px-3 rounded-pill" href="{{ url_for('auth.logout') }}">
+                                <i class="fa-solid fa-sign-out-alt me-1"></i> Logout
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == '/auth/login' %}active text-warning{% endif %}" href="{{ url_for('auth.login') }}">
+                                <i class="fa-solid fa-sign-in-alt me-1"></i> Login
+                            </a>
+                        </li>
+                        <li class="nav-item ms-lg-2">
+                            <a class="btn btn-warning btn-sm fw-bold px-3 rounded-pill text-dark" href="{{ url_for('auth.register') }}">
+                                <i class="fa-solid fa-user-plus me-1"></i> Register
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="py-1">
+        <div class="container">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show border-0 rounded-3 shadow-sm mb-4" role="alert">
+                            <div class="d-flex align-items-center">
+                                {% if category == 'success' %}
+                                    <i class="fa-solid fa-circle-check me-2 fs-5"></i>
+                                {% elif category == 'danger' or category == 'error' %}
+                                    <i class="fa-solid fa-circle-exclamation me-2 fs-5"></i>
+                                {% else %}
+                                    <i class="fa-solid fa-circle-info me-2 fs-5"></i>
+                                {% endif %}
+                                <div class="fw-medium">{{ message }}</div>
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+setTimeout(() => {
+    document.querySelectorAll('.alert').forEach(alert => {
+        alert.classList.remove('show');
+
+        setTimeout(() => {
+            alert.remove();
+        }, 150);
+    });
+}, 2000);
+</script>
+</body>
+</html>

@@ -1,0 +1,110 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}Client Registration - MotoFix{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center py-4">
+    <div class="col-12 col-sm-10 col-md-9 col-lg-7 col-xl-6">
+        <div class="card shadow border-0 rounded-4 bg-white">
+            <div class="card-body p-4 p-md-5">
+                
+                <div class="text-start text-sm-center mb-3">
+                    <h2 class="fw-bold text-dark tracking-tight">Create Account</h2>
+                </div>
+
+                <form action="{{ url_for('auth.register_post') }}" method="POST" class="needs-validation" novalidate>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="first_name" class="form-label text-dark small fw-semibold">First Name</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0 text-muted"><i class="fas fa-user"></i></span>
+                                <input type="text" class="form-control border-start-0 ps-1" id="first_name" name="first_name" placeholder="John" required>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="last_name" class="form-label text-dark small fw-semibold">Last Name</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0 text-muted"><i class="fas fa-user"></i></span>
+                                <input type="text" class="form-control border-start-0 ps-1" id="last_name" name="last_name" placeholder="Doe" required>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <label for="email" class="form-label text-dark small fw-semibold">Email Address</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0 text-muted"><i class="fas fa-envelope"></i></span>
+                                <input type="email" class="form-control border-start-0 ps-1" id="email" name="email" placeholder="name@example.com" required>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <label for="phone" class="form-label text-dark small fw-semibold">Phone Number</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0 text-muted"><i class="fas fa-phone"></i></span>
+                                <input type="tel" class="form-control border-start-0 ps-1" id="phone" name="phone" placeholder="09xxxxxxxxx" required>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="password" class="form-label text-dark small fw-semibold">Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0 text-muted"><i class="fas fa-lock"></i></span>
+                                <input type="password" class="form-control border-start-0 ps-1" id="password" name="password" minlength="6" placeholder="******" required>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="confirm_password" class="form-label text-dark small fw-semibold">Confirm Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0 text-muted"><i class="fas fa-lock"></i></span>
+                                <input type="password" class="form-control border-start-0 ps-1" id="confirm_password" name="confirm_password" minlength="6" placeholder="******" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2 mt-4 pt-2">
+                        <button class="btn btn-dark btn-lg rounded-3 fw-semibold fs-6 shadow-sm" type="submit">
+                            Register Account
+                        </button>
+                    </div>
+                </form>
+
+                <div class="text-center mt-4">
+                    <p class="text-muted small mb-0">Already have an account? 
+                        <a href="{{ url_for('auth.login') }}" class="text-dark fw-bold text-decoration-underline">Login here</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Bootstrap 5 client-side form validation
+    (function () {
+        'use strict'
+        var forms = document.querySelectorAll('.needs-validation')
+        Array.prototype.slice.call(forms).forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                var password = document.getElementById('password').value;
+                var confirmPassword = document.getElementById('confirm_password').value;
+                
+                if (password !== confirmPassword) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    document.getElementById('confirm_password').setCustomValidity('Passwords do not match');
+                } else {
+                    document.getElementById('confirm_password').setCustomValidity('');
+                }
+
+                if (!form.checkValidity()) {
+                    event.preventDefault()
+                    event.stopPropagation()
+                }
+                form.classList.add('was-validated')
+            }, false)
+        })
+    })()
+</script>
+{% endblock %}

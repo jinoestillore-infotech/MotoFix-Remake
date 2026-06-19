@@ -1,0 +1,61 @@
+THIS IS THE EXAMPLE OF MY FOLDER STRUCTURE. IGNORE THE FILES SINCE WE ARE GONNA MAKE A DIFFERENT APP
+
+project/
+│
+├── app/
+│   ├── routes/
+│   │   ├── auth_routes.py
+│   │   ├── user_routes.py
+│   │   └── dashboard_routes.py
+│   │
+│   ├── controllers/
+│   │   ├── auth_controller.py
+│   │   ├── user_controller.py
+│   │   └── dashboard_controller.py
+│   │
+│   ├── models/
+│   │   ├── user.py
+│   │   ├── role.py
+│   │   └── household.py
+│   │
+│   ├── services/
+│   │   ├── auth_service.py
+│   │   └── email_service.py
+│   │
+│   ├── classes/
+│   │   ├── Authentication.py
+│   │   └── Helpers.py
+│   │
+│   ├── templates/
+│   │   ├── layouts/
+│   │   │   ├── base.html
+│   │   │
+│   │   ├── auth/
+│   │   │   └── login.html
+│   │   │
+│   │   ├── owner-page/
+│   │   │   └── dashboard.html
+│   │   │
+│   │   ├── client-page/
+│   │   │   └── index.html
+│   │   │
+│   │   ├── mechanic-page/
+│   │   │   └── dashboard.html
+│   │   │
+│   │   │
+│   │   │
+│   ├── static/
+│   │   ├── css/
+│   │   ├── js/
+│   │   ├── images/
+│   │   └── uploads/
+│   │
+│   ├── config.py
+│   ├── database.py
+│   └── __init__.py
+│
+│
+├── .env
+├── requirements.txt
+├── run.py
+└── README.md
