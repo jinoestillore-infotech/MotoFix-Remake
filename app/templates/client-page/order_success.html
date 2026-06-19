@@ -3,73 +3,199 @@
 {% block title %}Order Successful - MotoShop{% endblock %}
 
 {% block content %}
-<div class="container py-5 pt-0 text-center">
-    <div class="mx-auto text-success mb-4" style="font-size: 5rem;">
-        <i class="fa-solid fa-circle-check"></i>
-    </div>
+<style>
+    .fs-7 { font-size: 0.875rem; }
+    .fs-9 { font-size: 0.75rem; }
+    .fw-extrabold { font-weight: 800; }
+    .text-truncate-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;  
+        overflow: hidden;
+    }
     
-    <h1 class="fw-extrabold text-dark tracking-tight mb-2">Thank You for Your Order!</h1>
-    <p class="text-muted mx-auto mb-4" style="max-width: 500px;">Your purchase reference is registered as <strong class="text-dark">Order #{{ order.id }}</strong>. We have alerted our mechanics to prepare your components immediately.</p>
+    /* Responsive adjustment for status timeline lines */
+    .order-status-step {
+        position: relative;
+    }
+    @media (min-width: 768px) {
+        .order-status-step::after {
+            content: '';
+            position: absolute;
+            top: 25px;
+            left: 50%;
+            width: 100%;
+            height: 2px;
+            background-color: #dee2e6;
+            z-index: 1;
+        }
+        .order-status-step:last-child::after {
+            display: none;
+        }
+    }
+    
+    .status-badge-icon {
+        width: 50px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        z-index: 2;
+        position: relative;
+        margin: 0 auto;
+    }
 
-    <div class="row g-4 d-flex justify-content-center text-start">
-        <div class="col-12 col-md-8 col-lg-6">
-            <!-- Details Invoice Card -->
+    /* Print-only CSS layout adjustments */
+    @media print {
+        .btn, .order-status-step, .status-badge-icon { display: none !important; }
+        .card { border: none !important; shadow: none !important; }
+    }
+</style>
+
+<div class="container py-4 py-md-5">
+    <!-- Success Headline Hero -->
+    <div class="text-center mb-4 mb-md-5">
+        <div class="mx-auto text-success mb-2" style="font-size: 3.5rem; line-height: 1;">
+            <i class="fa-solid fa-circle-check"></i>
+        </div>
+        <h1 class="h2 fw-extrabold text-dark tracking-tight mb-2">Thank You for Your Order!</h1>
+        <p class="text-muted mx-auto mb-0 px-2 small" style="max-width: 550px;">
+            Your purchase reference has been recorded as 
+            <span class="d-inline-block badge bg-warning-subtle font-monospace px-2.5 py-1.5 text-dark fs-7 fw-bold mt-1 mt-sm-0">#0001-0626-{{ order.id }}</span>
+        </p>
+    </div>
+
+    <!-- Live Execution Status Timeline -->
+    <div class="row g-3 text-center mb-4 mb-md-5 justify-content-center">
+        <div class="col-12 col-md-3 order-status-step mb-3 mb-md-0">
+            <div class="status-badge-icon bg-success text-white shadow-sm mb-2">
+                <i class="fa-solid fa-file-invoice"></i>
+            </div>
+            <span class="d-block small fw-bold text-dark">Order Confirmed</span>
+            <small class="text-muted fs-9">Invoice created</small>
+        </div>
+        <div class="col-12 col-md-3 order-status-step mb-3 mb-md-0">
+            <div class="status-badge-icon bg-warning-subtle text-warning border border-warning shadow-sm mb-2">
+                <i class="fa-solid fa-wrench"></i>
+            </div>
+            <span class="d-block small fw-bold text-dark">Preparing Parts</span>
+            <small class="text-muted fs-9">Mechanic verification</small>
+        </div>
+        <div class="col-12 col-md-3 order-status-step">
+            <div class="status-badge-icon bg-light text-muted border border-light-subtle mb-2">
+                <i class="fa-solid fa-truck-ramp-box"></i>
+            </div>
+            <span class="d-block small fw-bold text-muted">Ready for Dispatch</span>
+            <small class="text-muted fs-9">Pending pickup/delivery</small>
+        </div>
+    </div>
+
+    <!-- Invoice Details & Summaries -->
+    <div class="row g-4 justify-content-center text-start">
+        <div class="col-12 col-md-10 col-lg-7">
+            
             <div class="card border border-light-subtle shadow-sm rounded-4 overflow-hidden mb-4">
-                <div class="card-header bg-dark text-white py-3 border-0">
-                    <h5 class="fw-bold mb-0 text-uppercase tracking-wider fs-7">Purchase Invoice Details</h5>
+                <div class="card-header bg-dark text-white py-3 border-0 d-flex justify-content-between align-items-center gap-2">
+                    <h5 class="fw-bold mb-0 text-uppercase tracking-wider fs-7 text-truncate">
+                        <i class="fa-solid fa-receipt me-1 text-warning"></i> Invoice Details
+                    </h5>
+                    <button onclick="window.print();" class="btn btn-outline-light btn-sm rounded-pill py-1 px-2.5 fs-9 border-secondary flex-shrink-0">
+                        <i class="fa-solid fa-print me-1"></i>Print
+                    </button>
                 </div>
-                <div class="card-body p-4 text-dark">
-                    <div class="row g-2 mb-3 small">
-                        <div class="col-6 text-muted">Customer Name:</div>
-                        <div class="col-6 fw-bold text-end">{{ order.full_name }}</div>
-
-                        <div class="col-6 text-muted">Phone Number:</div>
-                        <div class="col-6 fw-bold text-end">{{ order.phone }}</div>
-
-                        <div class="col-6 text-muted">Fulfillment:</div>
-                        <div class="col-6 fw-bold text-end text-capitalize">{{ order.fulfillment_method }}</div>
-
+                
+                <div class="card-body p-3 p-sm-4 text-dark">
+                    <!-- Delivery Data Breakdown Matrix -->
+                    <div class="row g-3 mb-4 pb-3 border-bottom border-light-subtle small">
+                        <div class="col-12 col-sm-6">
+                            <span class="text-muted d-block mb-0.5 fs-9">Customer Name</span>
+                            <span class="fw-bold text-dark d-block fs-7 text-truncate">{{ order.full_name }}</span>
+                        </div>
+                        <div class="col-12 col-sm-6 text-sm-end">
+                            <span class="text-muted d-block mb-0.5 fs-9">Contact Phone Number</span>
+                            <span class="fw-bold text-dark d-block fs-7 font-monospace">{{ order.phone }}</span>
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <span class="text-muted d-block mb-0.5 fs-9">Fulfillment Choice</span>
+                            <div class="pt-0.5">
+                                <span class="badge bg-light text-dark border px-2.5 py-1 text-capitalize fw-bold fs-9">
+                                    {% if order.fulfillment_method == 'pickup' %}
+                                        <i class="fa-solid fa-store text-warning me-1"></i>Store Pickup
+                                    {% else %}
+                                        <i class="fa-solid fa-truck text-primary me-1"></i>Home Delivery
+                                    {% endif %}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-12 col-sm-6 text-sm-end">
+                            <span class="text-muted d-block mb-0.5 fs-9">Selected Payment</span>
+                            <div class="pt-0.5">
+                                <span class="badge bg-dark text-white px-2.5 py-1 text-uppercase fw-bold fs-9 tracking-wider">
+                                    {{ order.payment_method }}
+                                </span>
+                            </div>
+                        </div>
+                        
                         {% if order.fulfillment_method == 'delivery' %}
-                        <div class="col-6 text-muted">Address:</div>
-                        <div class="col-6 fw-bold text-end text-truncate-1" title="{{ order.address }}">{{ order.address }}</div>
+                        <div class="col-12 mt-2 pt-2 border-top border-light-subtle">
+                            <span class="text-muted d-block mb-0.5 fs-9">Complete Delivery Address</span>
+                            <span class="fw-bold text-dark d-block text-truncate-2 bg-light p-2 rounded-3 fs-7" title="{{ order.address }}">
+                                {{ order.address }}
+                            </span>
+                        </div>
                         {% endif %}
-
-                        <div class="col-6 text-muted">Payment:</div>
-                        <div class="col-6 fw-bold text-end text-uppercase">{{ order.payment_method }}</div>
                     </div>
 
-                    <!-- Owner Note display -->
+                    <!-- Client Note Notification -->
                     {% if order.notes %}
-                    <div class="bg-light border rounded-3 p-3 mb-3">
-                        <small class="text-secondary fw-semibold d-block mb-1"><i class="fa-solid fa-comment-dots text-secondary me-1"></i>Your Notes to the Owner:</small>
+                    <div class="bg-light border border-start border-start-3 border-warning rounded-3 p-3 mb-4">
+                        <small class="text-secondary fw-bold d-block mb-1">
+                            <i class="fa-solid fa-comment-dots text-secondary me-1"></i>Your Instructions / Notes:
+                        </small>
                         <p class="mb-0 small text-dark fst-italic">"{{ order.notes }}"</p>
                     </div>
                     {% endif %}
 
-                    <h6 class="fw-bold border-bottom border-light-subtle pb-2 mb-2 small text-uppercase tracking-wider text-muted">Purchased Components</h6>
-                    {% for item in items %}
-                        <div class="d-flex justify-content-between align-items-center mb-2 small">
-                            <div>
-                                <span class="fw-bold">{{ item.name }}</span>
-                                <span class="text-muted d-block font-monospace fs-9">{{ item.sku }}</span>
+                    <!-- Component Line Items Listing -->
+                    <h6 class="fw-bold border-bottom border-light-subtle pb-2 mb-3 small text-uppercase tracking-wider text-muted">
+                        Purchased Parts & Components
+                    </h6>
+                    <div class="mb-4">
+                        {% for item in items %}
+                            <div class="d-flex justify-content-between align-items-center py-2 border-bottom border-light-subtle small gap-2">
+                                <div class="pe-2 min-w-0">
+                                    <span class="fw-bold text-dark d-block text-truncate" title="{{ item.name }}">{{ item.name }}</span>
+                                    <small class="text-muted d-block font-monospace fs-9 text-truncate">{{ item.sku }}</small>
+                                </div>
+                                <div class="text-end flex-shrink-0">
+                                    <span class="text-dark fw-bold d-block">₱{{ "{:,.2f}".format(item.price * item.quantity) }}</span>
+                                    <small class="text-muted d-block fs-9">₱{{ "{:,.2f}".format(item.price) }} x{{ item.quantity }}</small>
+                                </div>
                             </div>
-                            <span class="text-dark fw-bold">₱{{ "{:,.2f}".format(item.price) }} <small class="text-muted fw-normal">x{{ item.quantity }}</small></span>
-                        </div>
-                    {% endfor %}
+                        {% endfor %}
+                    </div>
 
-                    <hr class="border-light-subtle my-3">
-                    <div class="d-flex justify-content-between align-items-baseline">
-                        <span class="fw-bold">Amount Settled</span>
-                        <span class="fs-4 fw-extrabold text-danger tracking-tight">₱{{ "{:,.2f}".format(order.total_amount) }}</span>
+                    <!-- Financial Balance Breakdown Footer -->
+                    <div class="d-flex justify-content-between align-items-center pt-2 gap-2">
+                        <div class="min-w-0">
+                            <span class="fw-bold text-dark d-block fs-7 text-truncate">Grand Amount Settled</span>
+                            <small class="text-muted fs-9 d-none d-sm-block">Includes local taxes & standard delivery fees</small>
+                        </div>
+                        <span class="fs-4 fs-sm-3 fw-extrabold text-danger tracking-tight flex-shrink-0">
+                            ₱{{ "{:,.2f}".format(order.total_amount) }}
+                        </span>
                     </div>
                 </div>
             </div>
 
-            <div class="d-flex gap-2 justify-content-center">
-                <a href="{{ url_for('dashboard.client_index') }}" class="btn btn-dark rounded-pill fw-bold px-4">
+            <!-- Page Navigation Redirects -->
+            <div class="d-grid gap-2 d-sm-flex justify-content-sm-center mt-4">
+                <a href="{{ url_for('dashboard.client_index') }}" class="btn btn-dark rounded-pill fw-bold px-4 py-2 shadow-sm fs-7">
                     <i class="fa-solid fa-house me-1 text-warning"></i>Return to Storefront
                 </a>
             </div>
+            
         </div>
     </div>
 </div>
