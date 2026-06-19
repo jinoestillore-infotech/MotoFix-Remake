@@ -2,42 +2,58 @@ from app.models.cart import Cart
 from app.models.part import Part
 
 class CartService:
-    """Service layer validating user cart operations and stock availability limits"""
+    """Service Layer handling inventory limit checks, pricing parameters, and cart additions"""
 
     @staticmethod
-    def add_item(user_id: int, part_id: int, quantity: int = 1):
-        """Validates stock levels and adds the product to the user's cart"""
-        if quantity <= 0:
-            return {"success": False, "message": "Quantity must be at least 1."}
-
-        # Check if the part exists
+    def add_to_cart(user_id: int, part_id: int, quantity: int = 1):
+        """Securely adds or updates items in the user's cart checking stock balances"""
         part = Part.find_by_id(part_id)
         if not part:
-            return {"success": False, "message": "Motorcycle part not found."}
+            return {"success": False, "message": "Part not found in inventory."}
 
-        # Check current stock levels
-        available_stock = part['quantity']
-        if available_stock <= 0:
-            return {"success": False, "message": "This part is currently out of stock."}
+        # Verify stock limits
+        if part['quantity'] < quantity:
+            return {"success": False, "message": f"Only {part['quantity']} units are available."}
 
-        # Check what is already in the user's cart
-        existing_item = Cart.get_item_in_cart(user_id, part_id)
-        current_cart_qty = existing_item['quantity'] if existing_item else 0
-        new_total_qty = current_cart_qty + quantity
+        existing_item = Cart.find_by_user_and_part(user_id, part_id)
+        if existing_item:
+            new_qty = existing_item['quantity'] + quantity
+            if new_qty > part['quantity']:
+                return {"success": False, "message": f"Cannot add. Combined quantity ({new_qty}) exceeds stock limit of {part['quantity']}."}
+            
+            Cart.update_quantity(existing_item['id'], new_qty)
+            return {"success": True, "message": "Cart updated successfully!"}
+        else:
+            Cart.add_item(user_id, part_id, quantity)
+            return {"success": True, "message": "Item added to cart!"}
 
-        if new_total_qty > available_stock:
-            return {
-                "success": False, 
-                "message": f"Cannot add. You have {current_cart_qty} in cart. Only {available_stock} are available."
-            }
+    @staticmethod
+    def update_item_quantity(item_id: int, user_id: int, quantity: int):
+        """Modifies specific item quantities while ensuring inventory validation matches limits"""
+        if quantity < 1:
+            return {"success": False, "message": "Quantity must be at least 1 unit."}
 
-        try:
-            Cart.add_or_update(user_id, part_id, quantity)
-            new_cart_count = Cart.get_cart_count(user_id)
-            return {
-                "success": True, 
-                "message": f"Successfully added {part['name']} to your cart!",
-                "cart_count": new_cart_count
-            }
-        except Exception as e:
-            return {"success": False, "message": f"Database write failure: {str(e)}"}
+        item = Cart.find_by_id_and_user(item_id, user_id)
+        if not item:
+            return {"success": False, "message": "Cart item not found or unauthorized access."}
+
+        part = Part.find_by_id(item['part_id'])
+        if not part:
+            return {"success": False, "message": "Associated part does not exist."}
+
+        # Bounds checks
+        if quantity > part['quantity']:
+            return {"success": False, "message": f"Stock limit exceeded. Only {part['quantity']} available."}
+
+        Cart.update_quantity(item_id, quantity)
+        return {"success": True, "message": "Quantity updated."}
+
+    @staticmethod
+    def remove_item(item_id: int, user_id: int):
+        """Removes item securely from a user's cart"""
+        item = Cart.find_by_id_and_user(item_id, user_id)
+        if not item:
+            return {"success": False, "message": "Item not found or unauthorized."}
+
+        Cart.delete_item(item_id, user_id)
+        return {"success": True, "message": "Item removed from cart."}

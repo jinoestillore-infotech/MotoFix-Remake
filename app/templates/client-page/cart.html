@@ -1,0 +1,283 @@
+<!-- project/app/templates/client-page/cart.html -->
+{% extends 'layouts/client-base.html' %}
+
+{% block title %}My Shopping Cart - MotoShop{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex align-items-center gap-2 mb-4">
+        <a href="{{ url_for('dashboard.client_index') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+            <i class="fa-solid fa-arrow-left me-1"></i> Continue Shopping
+        </a>
+    </div>
+
+    <h2 class="fw-bold text-dark mb-4"><i class="fa-solid fa-cart-shopping text-warning me-2"></i>My Cart</h2>
+
+    <div class="row g-4" id="cartMainContainer">
+        {% if cart_items %}
+            <!-- Cart Items List (Col-lg-8) -->
+            <div class="col-12 col-lg-8">
+                <div class="card border border-light-subtle shadow-sm rounded-4 overflow-hidden mb-3">
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0" id="cartTable">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th class="ps-4 py-3 fw-semibold text-uppercase fs-8">Product Details</th>
+                                        <th class="py-3 fw-semibold text-uppercase fs-8">Price</th>
+                                        <th class="py-3 text-center fw-semibold text-uppercase fs-8" style="width: 140px;">Quantity</th>
+                                        <th class="py-3 text-end fw-semibold text-uppercase fs-8">Subtotal</th>
+                                        <th class="pe-4 py-3 text-end fw-semibold text-uppercase fs-8" style="width: 80px;">Remove</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in cart_items %}
+                                    {% set default_image = url_for('static', filename='uploads/parts/gear.jpg') %}
+                                        <tr class="cart-item-row" id="cart-row-{{ item.id }}" data-price="{{ item.price }}" data-stock-limit="{{ item.stock_quantity }}">
+                                            <!-- Product Details -->
+                                            <td class="ps-4 py-3">
+                                                <div class="d-flex align-items-center gap-3">
+                                                    <div class="border rounded-3 bg-light d-flex align-items-center justify-content-center shadow-sm text-center" style="width: 60px; height: 60px; overflow: hidden; flex-shrink: 0;">
+                                                        {% if item.image_filename %}
+                                                            <img src="{{ url_for('static', filename='uploads/parts/' ~ item.image_filename) }}" 
+                                                                 onerror="this.onerror=null; this.src='{{ default_image }}';"  
+                                                                 alt="{{ item.name }}" class="img-fluid" style="object-fit: cover; width: 100%; height: 100%;">
+                                                        {% else %}
+                                                            <img src="{{ url_for('static', filename='uploads/parts/gear.jpg') }}" 
+                                                                 onerror="this.onerror=null; this.src='https://placehold.co/100x100?text=Parts';" 
+                                                                 alt="{{ item.name }}" class="img-fluid" style="object-fit: cover; width: 100%; height: 100%;">
+                                                        {% endif %}
+                                                    </div>
+                                                    <div>
+                                                        <div class="fw-bold text-dark">{{ item.name }}</div>
+                                                        <span class="badge bg-light text-secondary border rounded-pill px-2.5 py-1 small mt-1 font-monospace">{{ item.sku }}</span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            
+                                            <!-- Unit Price -->
+                                            <td class="py-3 text-secondary fw-semibold">
+                                                ₱{{ "{:,.2f}".format(item.price) }}
+                                            </td>
+                                            
+                                            <!-- Quantity Controls -->
+                                            <td class="py-3 text-center">
+                                                <div class="input-group input-group-sm border rounded-pill overflow-hidden shadow-none mx-auto" style="width: 110px;">
+                                                    <button class="btn btn-light border-0 px-2.5 qty-btn shadow-none" type="button" onclick="adjustQty('{{ item.id }}', -1)">
+                                                        <i class="fa-solid fa-minus text-muted"></i>
+                                                    </button>
+                                                    <input type="text" id="qty-input-{{ item.id }}" class="form-control border-0 text-center bg-white shadow-none fw-bold text-dark" value="{{ item.quantity }}" readonly>
+                                                    <button class="btn btn-light border-0 px-2.5 qty-btn shadow-none" type="button" onclick="adjustQty('{{ item.id }}', 1)">
+                                                        <i class="fa-solid fa-plus text-muted"></i>
+                                                    </button>
+                                                </div>
+                                                <small class="text-muted d-block mt-1 font-monospace" style="font-size: 0.7rem;">Stock: {{ item.stock_quantity }}</small>
+                                            </td>
+                                            
+                                            <!-- Subtotal -->
+                                            <td class="py-3 text-end fw-extrabold text-dark tracking-tight item-subtotal" id="subtotal-{{ item.id }}">
+                                                ₱{{ "{:,.2f}".format(item.price * item.quantity) }}
+                                            </td>
+                                            
+                                            <!-- Delete Button -->
+                                            <td class="pe-4 py-3 text-end">
+                                                <button class="btn btn-outline-danger btn-sm rounded-circle p-0 d-inline-flex align-items-center justify-content-center" style="width: 32px; height: 32px;" onclick="removeCartItem('{{ item.id }}')" title="Remove Item">
+                                                    <i class="fa-solid fa-trash small"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Summary Section (Col-lg-4) -->
+            <div class="col-12 col-lg-4">
+                <div class="card border border-light-subtle shadow-sm rounded-4 overflow-hidden position-sticky" style="top: 20px;">
+                    <div class="card-header bg-dark text-white py-3 border-0">
+                        <h5 class="fw-bold mb-0 text-uppercase tracking-wider fs-7">Order Summary</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-secondary small fw-medium">Cart Subtotal</span>
+                            <span class="text-dark fw-bold" id="orderSubtotal">₱0.00</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-secondary small fw-medium">Shipping Fee</span>
+                            <span class="text-success small fw-bold">FREE</span>
+                        </div>
+                        <hr class="border-light-subtle my-3">
+                        <div class="d-flex justify-content-between align-items-baseline mb-4">
+                            <span class="text-dark fw-bold">Estimated Total</span>
+                            <span class="fs-4 fw-extrabold text-danger tracking-tight" id="orderTotal">₱0.00</span>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-dark btn-lg rounded-pill fw-bold fs-6 shadow-sm py-2.5" onclick="proceedToCheckout()">
+                                <i class="fa-solid fa-credit-card me-2 text-warning"></i>Proceed to Checkout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <!-- Clean Empty Cart State -->
+            <div class="col-12 text-center py-5">
+                <div class="text-muted mb-3 opacity-50">
+                    <i class="fa-solid fa-cart-shopping fa-4x"></i>
+                </div>
+                <h4 class="fw-bold text-dark mb-2">Your Cart is Empty</h4>
+                <p class="text-muted small mx-auto mb-4" style="max-width: 350px;">You haven't added any parts or motorcycle components to your cart yet.</p>
+                <a href="{{ url_for('dashboard.client_index') }}" class="btn btn-dark rounded-pill fw-bold px-4 shadow-sm">
+                    <i class="fa-solid fa-store me-1 text-warning"></i>Explore Storefront
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        calculateCartTotals();
+    });
+
+    // Helper to format numbers back to currency standard
+    function formatCurrency(number) {
+        return "₱" + number.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    // Function to calculate subtotals and totals globally in client view
+    function calculateCartTotals() {
+        const rows = document.querySelectorAll('.cart-item-row');
+        let cartTotal = 0;
+
+        rows.forEach(row => {
+            const price = parseFloat(row.getAttribute('data-price'));
+            const itemId = row.id.replace('cart-row-', '');
+            const qtyInput = document.getElementById('qty-input-' + itemId);
+            if (qtyInput) {
+                const quantity = parseInt(qtyInput.value);
+                const subtotal = price * quantity;
+                cartTotal += subtotal;
+                
+                // Update specific row subtotal UI
+                const subtotalEl = document.getElementById('subtotal-' + itemId);
+                if (subtotalEl) {
+                    subtotalEl.textContent = formatCurrency(subtotal);
+                }
+            }
+        });
+
+        // Update Summary Cards
+        const orderSubtotal = document.getElementById('orderSubtotal');
+        const orderTotal = document.getElementById('orderTotal');
+        
+        if (orderSubtotal) orderSubtotal.textContent = formatCurrency(cartTotal);
+        if (orderTotal) orderTotal.textContent = formatCurrency(cartTotal);
+    }
+
+    // AJAX Action to adjust item quantities inside cart pool
+    function adjustQty(itemId, delta) {
+        const row = document.getElementById('cart-row-' + itemId);
+        if (!row) return;
+
+        const limit = parseInt(row.getAttribute('data-stock-limit'));
+        const qtyInput = document.getElementById('qty-input-' + itemId);
+        if (!qtyInput) return;
+
+        let currentQty = parseInt(qtyInput.value);
+        let newQty = currentQty + delta;
+
+        // Visual and state boundaries
+        if (newQty < 1) {
+            removeCartItem(itemId);
+            return;
+        }
+
+        if (newQty > limit) {
+            window.showSystemToast(`Only ${limit} units are currently available in stock.`, false);
+            return;
+        }
+
+        // Send AJAX request to server
+        fetch('/cart/update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ item_id: itemId, quantity: newQty })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                qtyInput.value = newQty;
+                calculateCartTotals();
+                if (window.refreshCartBadge) window.refreshCartBadge();
+            } else {
+                window.showSystemToast(data.message, false);
+            }
+        })
+        .catch(err => {
+            console.error("AJAX Update failed:", err);
+            window.showSystemToast("Could not update item quantity.", false);
+        });
+    }
+
+    // AJAX Action to remove single product from cart pool
+    function removeCartItem(itemId) {
+        if (!confirm("Are you sure you want to remove this item from your cart?")) return;
+
+        fetch('/cart/remove', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ item_id: itemId })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                const row = document.getElementById('cart-row-' + itemId);
+                if (row) {
+                    row.classList.add('fade');
+                    setTimeout(() => {
+                        row.remove();
+                        calculateCartTotals();
+                        if (window.refreshCartBadge) window.refreshCartBadge();
+                        
+                        // If no rows remain, dynamically update UI to empty state
+                        if (document.querySelectorAll('.cart-item-row').length === 0) {
+                            const container = document.getElementById('cartMainContainer');
+                            if (container) {
+                                container.innerHTML = `
+                                    <div class="col-12 text-center py-5">
+                                        <div class="text-muted mb-3 opacity-50">
+                                            <i class="fa-solid fa-cart-shopping fa-4x"></i>
+                                        </div>
+                                        <h4 class="fw-bold text-dark mb-2">Your Cart is Empty</h4>
+                                        <p class="text-muted small mx-auto mb-4" style="max-width: 350px;">You haven't added any parts or motorcycle components to your cart yet.</p>
+                                        <a href="{{ url_for('dashboard.client_index') }}" class="btn btn-dark rounded-pill fw-bold px-4 shadow-sm">
+                                            <i class="fa-solid fa-store me-1 text-warning"></i>Explore Storefront
+                                        </a>
+                                    </div>
+                                `;
+                            }
+                        }
+                    }, 200);
+                }
+                window.showSystemToast(data.message, true);
+            } else {
+                window.showSystemToast(data.message, false);
+            }
+        })
+        .catch(err => {
+            console.error("AJAX Delete failed:", err);
+            window.showSystemToast("Could not remove item from cart.", false);
+        });
+    }
+
+    // Dummy Checkout workflow to be linked to payment systems or Order creation
+    function proceedToCheckout() {
+        window.showSystemToast("Checkout service configuration and processing modules starting soon!", true);
+    }
+</script>
+{% endblock %}

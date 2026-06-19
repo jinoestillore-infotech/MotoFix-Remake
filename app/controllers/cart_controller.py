@@ -1,45 +1,63 @@
-from flask import request, jsonify, session
+from flask import render_template, request, session, jsonify
 from app.services.cart_service import CartService
 from app.models.cart import Cart
-from app.classes.Authentication import Authentication
 
 class CartController:
-    """Controller managing shopper cart operations"""
+    """Controller navigating all requests regarding shopping carts"""
 
     @staticmethod
-    def add_to_cart():
-        """AJAX POST controller logic to securely add elements to the shopper's cart"""
-        if not Authentication.is_authenticated():
-            return jsonify({"success": False, "message": "Please log in to continue."}), 401
+    def view_cart():
+        """Renders standard cart interface list"""
+        user_id = session.get('user_id')
+        cart_items = Cart.get_by_user_id(user_id)
+        return render_template('client-page/cart.html', cart_items=cart_items)
 
+    @staticmethod
+    def add_to_cart_api():
+        """POST JSON API endpoint for adding items to a cart pool"""
         user_id = session.get('user_id')
         data = request.get_json() or {}
-        
-        try:
-            part_id = int(data.get('part_id', 0))
-            quantity = int(data.get('quantity', 1))
-        except (ValueError, TypeError):
-            return jsonify({"success": False, "message": "Invalid parameters provided."}), 400
+        part_id = data.get('part_id')
+        quantity = int(data.get('quantity', 1))
 
         if not part_id:
-            return jsonify({"success": False, "message": "Missing part ID identifier."}), 400
+            return jsonify({"success": False, "message": "Missing Part ID."}), 400
 
-        # Execute operations via our business logic layer
-        result = CartService.add_item(user_id, part_id, quantity)
-        
-        if result['success']:
-            # Store cart count in Flask session for template rendering fallback
-            session['cart_count'] = result['cart_count']
-            
+        result = CartService.add_to_cart(user_id, part_id, quantity)
         return jsonify(result)
 
     @staticmethod
-    def get_cart_count():
-        """Returns the current user's live cart count"""
-        if not Authentication.is_authenticated():
-            return jsonify({"cart_count": 0})
-            
+    def update_quantity_api():
+        """POST JSON API updating active cart item quantities"""
         user_id = session.get('user_id')
-        count = Cart.get_cart_count(user_id)
-        session['cart_count'] = count
+        data = request.get_json() or {}
+        item_id = data.get('item_id')
+        quantity = int(data.get('quantity', 1))
+
+        if not item_id:
+            return jsonify({"success": False, "message": "Missing Item ID."}), 400
+
+        result = CartService.update_item_quantity(item_id, user_id, quantity)
+        return jsonify(result)
+
+    @staticmethod
+    def remove_item_api():
+        """POST JSON API deleting item from active cart"""
+        user_id = session.get('user_id')
+        data = request.get_json() or {}
+        item_id = data.get('item_id')
+
+        if not item_id:
+            return jsonify({"success": False, "message": "Missing Item ID."}), 400
+
+        result = CartService.remove_item(item_id, user_id)
+        return jsonify(result)
+
+    @staticmethod
+    def get_cart_count_api():
+        """GET JSON API returning live sum of products in user cart"""
+        user_id = session.get('user_id')
+        if not user_id:
+            return jsonify({"cart_count": 0})
+        count = Cart.get_total_count(user_id)
         return jsonify({"cart_count": count})
