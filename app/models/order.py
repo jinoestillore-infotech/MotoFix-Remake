@@ -49,3 +49,20 @@ class Order:
             ORDER BY created_at DESC
         """
         return Database.execute_query(query, (user_id,))
+
+    @staticmethod
+    def find_all_orders():
+        """Fetches all customer orders in the database for Owner review"""
+        query = """
+            SELECT o.*, u.email AS user_email, u.first_name AS user_first, u.last_name AS user_last
+            FROM orders o
+            JOIN users u ON o.user_id = u.id
+            ORDER BY o.created_at DESC
+        """
+        return Database.execute_query(query)
+
+    @staticmethod
+    def update_status(order_id: int, status: str):
+        """Updates the tracking status of a specific order"""
+        query = "UPDATE orders SET status = %s WHERE id = %s"
+        return Database.execute_query(query, (status, order_id), commit=True)

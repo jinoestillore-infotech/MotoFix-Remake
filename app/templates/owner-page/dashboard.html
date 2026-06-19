@@ -49,16 +49,16 @@
             </div>
         </div>
 
-        <!-- Appointments Card -->
+        <!-- Pending Customer Orders Card -->
         <div class="col-12 col-sm-6 col-lg-3">
             <div class="card border border-light-subtle shadow-sm rounded-4 h-100">
                 <div class="card-body d-flex align-items-center">
                     <div class="p-3 rounded-3 bg-warning-subtle text-warning-emphasis me-3">
-                        <i class="fas fa-calendar-alt fa-2x"></i>
+                        <i class="fas fa-receipt fa-2x"></i>
                     </div>
                     <div>
-                        <h6 class="text-muted mb-1 small fw-bold text-uppercase tracking-wider">Appointments</h6>
-                        <h3 class="mb-0 fw-bold text-dark tracking-tight">{{ stats.total_appointments }}</h3>
+                        <h6 class="text-muted mb-1 small fw-bold text-uppercase tracking-wider">Pending Orders</h6>
+                        <h3 class="mb-0 fw-bold text-dark tracking-tight">{{ stats.pending_orders }}</h3>
                     </div>
                 </div>
             </div>
@@ -84,7 +84,7 @@
     <h4 class="fw-bold text-dark mb-3">Management Launchpad</h4>
     <div class="row g-4 mb-4">
         <!-- Card 1: Parts Inventory Management -->
-        <div class="col-12 col-md-6 col-lg-4">
+        <div class="col-12 col-md-6 col-lg-3">
             <div class="card border border-light-subtle shadow-sm rounded-4 h-100 card-hover-effect">
                 <div class="card-body d-flex flex-column p-4">
                     <div class="d-flex align-items-center justify-content-between mb-3">
@@ -104,8 +104,29 @@
             </div>
         </div>
 
-        <!-- Card 2: Staff Mechanics Onboarding -->
-        <div class="col-12 col-md-6 col-lg-4">
+        <!-- Card 2: Customer Orders Management -->
+        <div class="col-12 col-md-6 col-lg-3">
+            <div class="card border border-light-subtle shadow-sm rounded-4 h-100 card-hover-effect">
+                <div class="card-body d-flex flex-column p-4">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="p-3 rounded-3 bg-warning-subtle text-warning-emphasis">
+                            <i class="fa-solid fa-file-invoice-dollar fa-xl"></i>
+                        </div>
+                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">Active</span>
+                    </div>
+                    <h5 class="fw-bold text-dark">Customer Orders</h5>
+                    <p class="text-muted small flex-grow-1">Track incoming parts requests, review customer fulfillment coordinates, accept GCash proofs, and update order statuses.</p>
+                    <div class="mt-3">
+                        <a href="{{ url_for('dashboard.owner_orders') }}" class="btn btn-dark rounded-pill w-100 fw-semibold shadow-sm">
+                            Manage Orders
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 3: Staff Mechanics Onboarding -->
+        <div class="col-12 col-md-6 col-lg-3">
             <div class="card border border-light-subtle shadow-sm rounded-4 h-100 card-hover-effect">
                 <div class="card-body d-flex flex-column p-4">
                     <div class="d-flex align-items-center justify-content-between mb-3">
@@ -125,8 +146,8 @@
             </div>
         </div>
 
-        <!-- Card 3: Appointment Bookings Scheduler -->
-        <div class="col-12 col-md-6 col-lg-4">
+        <!-- Card 4: Appointment Bookings Scheduler -->
+        <div class="col-12 col-md-6 col-lg-3">
             <div class="card border border-light-subtle shadow-sm rounded-4 h-100 card-hover-effect opacity-75">
                 <div class="card-body d-flex flex-column p-4 bg-light-subtle">
                     <div class="d-flex align-items-center justify-content-between mb-3">
@@ -153,7 +174,8 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 rounded-4 shadow-lg">
             <div class="modal-header border-0 pb-0 pt-4 px-4">
-                <h5 class="modal-title fw-bold text-dark" id="registerMechanicModalLabel">Register Shop Mechanic</h5>
+                <h5 class="modal-title fw-bold text-dark" id="registerMechanicModalLabel"><i class="fas fa-tools text-dark me-2"></i>Register Shop Mechanic</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form action="{{ url_for('auth.onboard_mechanic') }}" method="POST">
                 <input type="hidden" name="role_id" value="2">
@@ -178,17 +200,17 @@
                         </div>
                         <div class="col-md-6">
                             <label for="mech_pass" class="form-label text-dark small fw-semibold">Password</label>
-                            <input type="password" class="form-control border-light-subtle" id="mech_pass" name="password" placeholder="******" minlength="6" required>
+                            <input type="password" class="form-control border-light-subtle" id="mech_pass" name="password" minlength="6" required>
                         </div>
                         <div class="col-md-6">
                             <label for="mech_confirm" class="form-label text-dark small fw-semibold">Confirm Password</label>
-                            <input type="password" class="form-control border-light-subtle" id="mech_confirm" name="confirm_password" placeholder="******" minlength="6" required>
+                            <input type="password" class="form-control border-light-subtle" id="mech_confirm" name="confirm_password" minlength="6" required>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer border-0 pt-0 pb-4 px-4">
                     <button type="button" class="btn btn-light rounded-pill fw-semibold px-3" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-dark rounded-pill fw-semibold px-4 shadow-sm">Register Mechanic</button>
+                    <button type="submit" class="btn btn-dark rounded-pill fw-semibold px-4 shadow-sm"><i class="fas fa-user-plus me-2 text-warning"></i>Register Mechanic</button>
                 </div>
             </form>
         </div>

@@ -63,10 +63,10 @@
         </div>
     </div>
 
-    <div class="row g-3 bg-white rounded-4" id="ordersContainer">
+    <div class="row g-2 bg-white rounded-4" id="ordersContainer">
         {% if orders %}
             {% for order in orders %}
-                <div class="col-12 col-md-10 col-lg-5 order-card-wrapper" data-status="{{ order.status|lower }}">
+                <div class="col-12 col-md-10 col-lg-5 order-card-wrapper mx-auto" data-status="{{ order.status|lower }}">
                     <div class="card bg-light border border-light-subtle shadow-sm rounded-4 overflow-hidden mb-2">
                         
                         <div class="card-header d-flex justify-content-between align-items-center py-3 px-3 px-sm-4 gap-2">

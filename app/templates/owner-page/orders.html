@@ -1,0 +1,425 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}Manage Customer Orders - MotoFix{% endblock %}
+
+{% block content %}
+{% set default_image = url_for('static', filename='uploads/parts/gear.jpg') %}
+
+<style>
+    /* Professional Layout Variables & Refinements */
+    .fs-7 { font-size: 0.875rem; }
+    .fs-8 { font-size: 0.8rem; }
+    .fs-9 { font-size: 0.735rem; }
+    .fw-extrabold { font-weight: 800; }
+    
+    /* Modern Clean Tab Strip Segmented Control */
+    .status-nav-group {
+        background-color: #f8f9fa;
+        padding: 0.35rem;
+        border-radius: 50rem;
+        border: 1px solid #e9ecef;
+    }
+    .filter-status-btn {
+        border: 1px solid transparent !important;
+        font-weight: 600 !important;
+        font-size: 0.85rem !important;
+        padding: 0.45rem 1.25rem !important;
+        color: #495057 !important;
+        background: transparent !important;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+    .filter-status-btn.btn-dark {
+        background-color: #ffffff !important;
+        color: #212529 !important;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.06) !important;
+        border: 1px solid orange !important;
+    }
+    
+    /* Clean Elevated Table Designs */
+    #ownerOrdersTable th {
+        background-color: #f8f9fa;
+        color: #495057;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+    }
+    .order-row-item {
+        transition: all 0.15s ease;
+    }
+    .order-row-item:hover {
+        background-color: rgba(248, 249, 250, 0.85) !important;
+        transform: translateY(-1px);
+        box-shadow: inset 4px 0 0 #212529;
+    }
+    
+    /* Global Helpers */
+    .last-border-none:last-child {
+        border-bottom: none !important;
+    }
+    .scrollbar-hidden::-webkit-scrollbar {
+        display: none;
+    }
+    .scrollbar-hidden {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch; 
+    }
+    
+    /* Dashboard Specific Back Button Override */
+    .btn-dashboard-back {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        color: #495057;
+        font-weight: 600;
+        transition: all 0.2s ease;
+    }
+    .btn-dashboard-back:hover {
+        background-color: #212529;
+        color: #ffffff;
+        border-color: #212529;
+    }
+</style>
+
+<div class="container-fluid py-4 px-md-4">
+    <a href="{{ url_for('dashboard.owner_dashboard') }}" class="btn btn-sm rounded-pill fw-semibold">
+        <i class="fas fa-arrow-left me-1"></i> Dashboard
+    </a>
+
+    <div class="d-flex justify-content-between align-items-center flex-wrap mb-4 gap-3 mt-2">
+        <div>
+            <h1 class="h3 mb-1 text-dark fw-extrabold tracking-tight">Customer Orders</h1>
+            <p class="text-muted fs-7 mb-0">Approve orders, verify payment receipt numbers, and track store delivery or pickup statuses.</p>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4 align-items-center">
+        <div class="col-12 col-xl-5">
+            <div class="input-group shadow-sm rounded-3 overflow-hidden">
+                <span class="input-group-text bg-white border-end-0 text-muted py-2.5"><i class="fas fa-search"></i></span>
+                <input type="text" id="ownerOrderSearch" class="form-control border-start-0 ps-1 py-2.5 fs-7 shadow-none" placeholder="Search by Order ID, Client Name, SKU, or Phone...">
+            </div>
+        </div>
+        <div class="col-12 col-xl-7 d-flex justify-content-xl-end">
+            <div class="d-flex align-items-center status-nav-group overflow-x-auto scrollbar-hidden w-100 w-xl-auto shadow-sm">
+                <button class="btn btn-dark btn-sm rounded-pill filter-status-btn text-nowrap" data-status="all">
+                    All Orders
+                </button>
+                <button class="btn btn-outline-secondary btn-sm rounded-pill filter-status-btn text-nowrap" data-status="pending">
+                    Pending
+                </button>
+                <button class="btn btn-outline-secondary btn-sm rounded-pill filter-status-btn text-nowrap" data-status="processing">
+                    Processing
+                </button>
+                <button class="btn btn-outline-secondary btn-sm rounded-pill filter-status-btn text-nowrap" data-status="completed">
+                    Completed
+                </button>
+                <button class="btn btn-outline-secondary btn-sm rounded-pill filter-status-btn text-nowrap" data-status="cancelled">
+                    Cancelled
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border border-light-subtle shadow-sm rounded-4 overflow-hidden mb-5 bg-white">
+        <div class="card-body p-0">
+            {% if orders %}
+                <div class="table-responsive scrollbar-hidden">
+                    <table class="table table-hover align-middle mb-0" id="ownerOrdersTable">
+                        <thead>
+                            <tr class="text-uppercase fw-bold text-muted border-bottom">
+                                <th class="ps-4 py-3 fw-bold">Order Ref.</th>
+                                <th class="py-3 fw-bold">Customer Profile</th>
+                                <th class="py-3 fw-bold text-center">No. of Items</th>
+                                <th class="py-3 fw-bold">Payment Mode</th>
+                                <th class="py-3 text-end fw-bold">Grand Total</th>
+                                <th class="py-3 text-center fw-bold">Order Status</th>
+                                <th class="pe-4 py-3 text-end fw-bold">Operations</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in orders %}
+                                <tr class="order-row-item border-bottom border-light-subtle" 
+                                    data-order-id="{{ order.id }}" 
+                                    data-status="{{ order.status|lower }}"
+                                    data-name="{{ order.full_name|lower }}"
+                                    data-phone="{{ order.phone }}"
+                                    data-skus="{% for item in order.order_items %}{{ item.sku|lower }} {% endfor %}">
+                                    
+                                    <td class="ps-4 py-3.5">
+                                        <span class="font-monospace fw-bold text-dark d-block">#0001-0626-{{ order.id }}</span>
+                                        <span class="text-muted fs-9 d-block mt-0.5">
+                                            {{ order.created_at.strftime('%b %d, %Y - %I:%M %p') if order.created_at is not string else order.created_at }}
+                                        </span>
+                                    </td>
+                                    <td class="py-3.5">
+                                        <div class="fw-bold text-dark fs-7 mb-0.5">{{ order.full_name }}</div>
+                                        <div class="text-muted fs-8">{{ order.phone }}</div>
+                                    </td>
+                                    <td class="py-3.5 text-center">
+                                        <span class="badge bg-light text-dark border border-light-subtle rounded-pill px-2.5 py-1.5 fw-semibold fs-9">
+                                            {{ order.order_items|length }} Unit(s)
+                                        </span>
+                                    </td>
+                                    <td class="py-3.5">
+                                        <span class="badge text-uppercase px-2.5 py-1.5 rounded-3 fs-9 fw-bold
+                                            {% if order.fulfillment_method == 'pickup' %}
+                                                bg-light text-secondary border border-light-subtle
+                                            {% else %}
+                                                bg-primary-subtle text-primary border border-primary-subtle
+                                            {% endif %}">
+                                            {% if order.fulfillment_method == 'pickup' %}
+                                                <i class="fa-solid fa-store me-1 text-warning"></i>Pickup
+                                            {% else %}
+                                                <i class="fa-solid fa-truck me-1 text-primary"></i>Delivery
+                                            {% endif %}
+                                        </span>
+                                    </td>
+                                    <td class="py-3.5 text-end fw-extrabold text-dark font-monospace fs-7">
+                                        ₱{{ "{:,.2f}".format(order.total_amount) }}
+                                    </td>
+                                    <td class="text-center py-3.5">
+                                        <span class="badge rounded-pill text-uppercase fs-9 py-1.5 px-3 fw-extrabold tracking-wide
+                                            {% if order.status|lower == 'pending' %}
+                                                bg-warning-subtle text-warning border border-warning-subtle
+                                            {% elif order.status|lower == 'processing' %}
+                                                bg-primary-subtle text-primary border border-primary-subtle
+                                            {% elif order.status|lower == 'completed' %}
+                                                bg-success-subtle text-success border border-success-subtle
+                                            {% else %}
+                                                bg-danger-subtle text-danger border border-danger-subtle
+                                            {% endif %}">
+                                            {{ order.status }}
+                                        </span>
+                                    </td>
+                                    <td class="pe-4 py-3.5 text-end">
+                                        <button class="btn btn-dark btn-sm rounded-pill fw-bold px-3 shadow-sm fs-9" data-bs-toggle="modal" data-bs-target="#orderDetailsModal{{ order.id }}">
+                                            <i class="fa-solid fa-magnifying-glass-plus me-1 text-warning"></i>Inspect Log
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="ownerNoOrdersPlaceholder" class="text-center py-5 d-none">
+                    <div class="text-muted mb-3 opacity-30">
+                        <i class="fa-solid fa-receipt fa-4x"></i>
+                    </div>
+                    <h5 class="fw-bold text-dark mb-1">No Matching Customer Orders Found</h5>
+                    <p class="text-muted fs-8 mx-auto" style="max-width: 380px;">We couldn't find any historical store transactions that fit those target search keywords or status filters.</p>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <div class="text-muted mb-3 opacity-30">
+                        <i class="fas fa-receipt fa-4x"></i>
+                    </div>
+                    <h5 class="fw-bold text-dark mb-1">No Customer Orders Received</h5>
+                    <p class="text-muted fs-8 mx-auto mb-0" style="max-width: 350px;">Orders placed by clients via checkout workflow pipelines will populate this admin control panel immediately.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if orders %}
+    {% for order in orders %}
+        <div class="modal fade" id="orderDetailsModal{{ order.id }}" tabindex="-1" aria-labelledby="orderLabel{{ order.id }}" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content border-0 rounded-4 shadow-lg text-dark overflow-hidden">
+                    
+                    <div class="modal-header bg-light border-bottom border-light-subtle py-3 px-4 align-items-center">
+                        <h5 class="modal-title fw-bold text-dark fs-5 tracking-tight" id="orderLabel{{ order.id }}">
+                            <i class="fa-solid fa-file-invoice-dollar text-primary me-2"></i>Order No. #0001-0626-{{ order.id }}
+                        </h5>
+                        <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    
+                    <div class="modal-body p-4 bg-white">
+                        
+                        <div class="row g-4 mb-4 pb-3 border-bottom border-light-subtle">
+                            <div class="col-6 col-md-3">
+                                <span class="text-muted d-block mb-1 text-uppercase fw-semibold small tracking-wider" style="font-size: 0.75rem;">Account Profile</span>
+                                <span class="fw-bold d-block text-dark">{{ order.user_first }} {{ order.user_last }}</span>
+                                <span class="text-muted small text-truncate d-block" style="font-size: 0.8rem;">{{ order.user_email }}</span>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <span class="text-muted d-block mb-1 text-uppercase fw-semibold small tracking-wider" style="font-size: 0.75rem;">Recipient Name</span>
+                                <span class="fw-bold d-block text-dark">{{ order.full_name }}</span>
+                                <span class="text-muted small"><i class="fa-solid fa-phone me-1 opacity-70"></i>{{ order.phone }}</span>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <span class="text-muted d-block mb-1 text-uppercase fw-semibold small tracking-wider" style="font-size: 0.75rem;">Fulfillment</span>
+                                <div class="mt-1">
+                                    <span class="badge text-uppercase py-1 px-2 fw-bold 
+                                        {% if order.fulfillment_method == 'pickup' %}
+                                            bg-secondary-subtle text-secondary border border-secondary-subtle
+                                        {% else %}
+                                            bg-primary-subtle text-primary border border-primary-subtle
+                                        {% endif %}">
+                                        {{ order.fulfillment_method }}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <span class="text-muted d-block mb-1 text-uppercase fw-semibold small tracking-wider" style="font-size: 0.75rem;">Payment Method</span>
+                                <div class="mt-1">
+                                    <span class="badge bg-dark text-white text-uppercase py-1 px-2 tracking-wider fw-bold">
+                                        {{ order.payment_method }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {% if order.fulfillment_method == 'delivery' %}
+                                <div class="col-12 mt-2">
+                                    <span class="text-muted d-block mb-1 text-uppercase fw-semibold small tracking-wider" style="font-size: 0.75rem;">Shipping Address</span>
+                                    <span class="fw-medium text-dark d-block bg-light p-2.5 rounded-3 border border-light-subtle fs-7">
+                                        <i class="fa-solid fa-location-dot me-2 text-danger"></i>{{ order.address }}
+                                    </span>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        {% if order.notes %}
+                            <div class="bg-warning-subtle border border-warning-subtle rounded-3 p-3 mb-4">
+                                <span class="text-warning-emphasis fw-bold d-block mb-1 small">
+                                    <i class="fa-solid fa-comment-dots me-2"></i>Customer Notes:
+                                </span>
+                                <p class="mb-0 text-dark fst-italic small">"{{ order.notes }}"</p>
+                            </div>
+                        {% endif %}
+
+                        <h6 class="fw-bold text-uppercase tracking-wider text-muted border-bottom border-light-subtle pb-2 mb-3" style="font-size: 0.75rem;">
+                            Items Ordered
+                        </h6>
+                        
+                        <div class="mb-4">
+                            {% for item in order.order_items %}
+                                <div class="d-flex justify-content-between align-items-center py-3 {% if not loop.last %}border-bottom border-light-subtle{% endif %}">
+                                    <div class="pe-3 min-w-0">
+                                        <div class="d-flex align-items-center gap-3">
+                                            <div class="border border-light-subtle rounded-3 bg-light d-flex align-items-center justify-content-center overflow-hidden" style="width: 48px; height: 48px; flex-shrink: 0;">
+                                                {% if item.image_filename %}
+                                                    <img src="{{ url_for('static', filename='uploads/parts/' ~ item.image_filename) }}" 
+                                                        onerror="this.onerror=null; this.src='{{ default_image }}';" 
+                                                        alt="{{ item.name }}" class="img-fluid" style="object-fit: cover; width: 100%; height: 100%;">
+                                                {% else %}
+                                                    <img src="{{ url_for('static', filename='uploads/parts/gear.jpg') }}" 
+                                                        onerror="this.onerror=null; this.src='https://placehold.co/100x100?text=Parts';" 
+                                                        alt="{{ item.name }}" class="img-fluid" style="object-fit: cover; width: 100%; height: 100%;">
+                                                {% endif %}
+                                            </div>
+                                            <div class="min-w-0">
+                                                <span class="fw-bold text-dark d-block text-truncate" style="max-width: 320px;">{{ item.name }}</span>
+                                                <small class="text-muted d-block font-monospace mt-0.5" style="font-size: 0.8rem;">SKU: {{ item.sku }}</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="text-end flex-shrink-0">
+                                        <span class="text-dark fw-bold d-block font-monospace">₱{{ "{:,.2f}".format(item.price * item.quantity) }}</span>
+                                        <small class="text-muted d-block mt-0.5" style="font-size: 0.8rem;">₱{{ "{:,.2f}".format(item.price) }} × {{ item.quantity }}</small>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center bg-light p-3 rounded-3 mb-4 border border-light-subtle">
+                            <div>
+                                <span class="fw-bold text-dark d-block">Total Amount Paid</span>
+                                <small class="text-muted d-block" style="font-size: 0.8rem;">Tax and fulfillment fees included</small>
+                            </div>
+                            <span class="fs-3 fw-bold text-success tracking-tight font-monospace">
+                                ₱{{ "{:,.2f}".format(order.total_amount) }}
+                            </span>
+                        </div>
+
+                        <h6 class="fw-bold text-uppercase tracking-wider text-muted border-bottom border-light-subtle pb-2 mb-3" style="font-size: 0.75rem;">
+                            Update Status
+                        </h6>
+                        <form action="{{ url_for('dashboard.update_order_status', order_id=order.id) }}" method="POST" class="m-0">
+                            <div class="row align-items-center g-3">
+                                <div class="col-12 col-sm-8">
+                                    <select class="form-select border-light-subtle py-2 shadow-none rounded-3" name="status" required>
+                                        <option value="Pending" {% if order.status == 'Pending' %}selected{% endif %}>Pending (Awaiting preparation)</option>
+                                        <option value="Processing" {% if order.status == 'Processing' %}selected{% endif %}>Processing (Assembling / packing parcel)</option>
+                                        <option value="Completed" {% if order.status == 'Completed' %}selected{% endif %}>Completed (Picked up / Delivered)</option>
+                                        <option value="Cancelled" {% if order.status == 'Cancelled' %}selected{% endif %}>Cancelled (Nullified / Refunded)</option>
+                                    </select>
+                                </div>
+                                <div class="col-12 col-sm-4">
+                                    <button type="submit" class="btn btn-warning w-100 rounded-3 fw-bold py-2 shadow-sm">
+                                        Save Status
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+{% endif %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('ownerOrderSearch');
+    const filterButtons = document.querySelectorAll('.filter-status-btn');
+    const orderRows = document.querySelectorAll('.order-row-item');
+    const noOrdersPlaceholder = document.getElementById('ownerNoOrdersPlaceholder');
+    const tableHeader = document.querySelector('table');
+
+    let activeFilterStatus = 'all';
+
+    function executeTableFiltering() {
+        const query = searchInput.value.toLowerCase().trim();
+        let matchCount = 0;
+
+        orderRows.forEach(row => {
+            const orderId = row.getAttribute('data-order-id');
+            const status = row.getAttribute('data-status');
+            const customerName = row.getAttribute('data-name');
+            const phone = row.getAttribute('data-phone');
+            const skus = row.getAttribute('data-skus');
+
+            const matchesSearch = orderId.includes(query) || 
+                                  customerName.includes(query) || 
+                                  phone.includes(query) || 
+                                  skus.includes(query);
+
+            const matchesStatusTab = (activeFilterStatus === 'all') || (status === activeFilterStatus);
+
+            if (matchesSearch && matchesStatusTab) {
+                row.style.setProperty('display', '', 'important');
+                matchCount++;
+            } else {
+                row.style.setProperty('display', 'none', 'important');
+            }
+        });
+
+        if (matchCount === 0 && orderRows.length > 0) {
+            if (noOrdersPlaceholder) noOrdersPlaceholder.classList.remove('d-none');
+            if (tableHeader) tableHeader.classList.add('d-none');
+        } else {
+            if (noOrdersPlaceholder) noOrdersPlaceholder.classList.add('d-none');
+            if (tableHeader) tableHeader.classList.remove('d-none');
+        }
+    }
+
+    filterButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            filterButtons.forEach(b => {
+                b.classList.remove('btn-dark');
+            });
+            this.classList.add('btn-dark');
+
+            activeFilterStatus = this.getAttribute('data-status');
+            executeTableFiltering();
+        });
+    });
+
+    if (searchInput) {
+        searchInput.addEventListener('input', executeTableFiltering);
+    }
+});
+</script>
+{% endblock %}

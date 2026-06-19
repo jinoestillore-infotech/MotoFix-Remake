@@ -19,3 +19,15 @@ def mechanic_dashboard():
 @Authentication.role_required('Client')
 def client_index():
     return DashboardController.client_index()
+
+@dashboard_bp.route('/owner/orders', methods=['GET'])
+@Authentication.role_required('Owner')
+def owner_orders():
+    """Allows Owner to view all client customer orders"""
+    return DashboardController.owner_orders()
+
+@dashboard_bp.route('/owner/orders/update-status/<int:order_id>', methods=['POST'])
+@Authentication.role_required('Owner')
+def update_order_status(order_id):
+    """Allows Owner to approve, process, complete, or cancel an order"""
+    return DashboardController.update_order_status(order_id)
