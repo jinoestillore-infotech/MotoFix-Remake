@@ -1,0 +1,224 @@
+{% extends 'layouts/client-base.html' %}
+
+{% block title %}My Orders - MotoShop{% endblock %}
+
+{% block content %}
+{% set default_image = url_for('static', filename='uploads/parts/gear.jpg') %}
+
+<style>
+    .fs-7 { font-size: 0.875rem; }
+    .fs-8 { font-size: 0.8rem; }
+    .fs-9 { font-size: 0.75rem; }
+    .fw-extrabold { font-weight: 800; }
+    
+    /* Clean Underline Navigation bar for Shopee Style tabs */
+    .status-nav-tabs {
+        display: flex;
+        overflow-x: auto;
+        white-space: nowrap;
+        border-bottom: 1px solid #dee2e6;
+        -webkit-overflow-scrolling: touch;
+    }
+    .status-nav-tabs::-webkit-scrollbar {
+        display: none;
+    }
+    .nav-tab-btn {
+        background: none;
+        border: none;
+        padding: 0.75rem 1rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #6c757d;
+        position: relative;
+        transition: color 0.2s ease;
+    }
+    .nav-tab-btn.active {
+        color: #212529;
+        font-weight: 700;
+    }
+    .nav-tab-btn.active::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 3px;
+        background-color: #212529;
+    }
+    .last-border-none:last-child {
+        border-bottom: none !important;
+    }
+</style>
+
+<div class="container py-3 py-md-4">
+    <h2 class="fw-extrabold text-dark mb-3 mb-md-4 px-1">My Orders</h2>
+
+    <div class="mb-4">
+        <div class="status-nav-tabs px-1">
+            <button class="nav-tab-btn active filter-status-btn" data-status="all">All</button>
+            <button class="nav-tab-btn filter-status-btn" data-status="pending">Pending</button>
+            <button class="nav-tab-btn filter-status-btn" data-status="processing">Processing</button>
+            <button class="nav-tab-btn filter-status-btn" data-status="completed">Completed</button>
+            <button class="nav-tab-btn filter-status-btn" data-status="cancelled">Cancelled</button>
+        </div>
+    </div>
+
+    <div class="row g-3 bg-white rounded-4" id="ordersContainer">
+        {% if orders %}
+            {% for order in orders %}
+                <div class="col-12 col-md-10 col-lg-5 order-card-wrapper" data-status="{{ order.status|lower }}">
+                    <div class="card bg-light border border-light-subtle shadow-sm rounded-4 overflow-hidden mb-2">
+                        
+                        <div class="card-header d-flex justify-content-between align-items-center py-3 px-3 px-sm-4 gap-2">
+                            <div class="min-w-0">
+                                <span class="text-muted fs-9 ms-0 ms-sm-2">
+                                    <i class="fa-regular fa-clock me-1 d-none d-sm-inline"></i>{{ order.created_at.strftime('%b %d, %Y - %I:%M %p') if order.created_at is not string else order.created_at }}
+                                </span>
+                            </div>
+                            <div class="flex-shrink-0">
+                                <span class="badge rounded-pill text-uppercase fs-9 py-1.5 px-2.5 fw-bold tracking-wider
+                                    {% if order.status|lower == 'pending' %}
+                                        bg-warning-subtle text-warning border border-warning-subtle
+                                    {% elif order.status|lower == 'processing' %}
+                                        bg-primary-subtle text-primary border border-primary-subtle
+                                    {% elif order.status|lower == 'completed' %}
+                                        bg-success-subtle text-success border border-success-subtle
+                                    {% else %}
+                                        bg-danger-subtle text-danger border border-danger-subtle
+                                    {% endif %}">
+                                    {{ order.status }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="card-body p-3 p-sm-4">
+                            <div class="order-items-list">
+                                {% for item in order.order_items %}
+                                    <div class="d-flex align-items-center gap-3 py-2 last-border-none">
+                                        <div class="border rounded-3 bg-light d-flex align-items-center justify-content-center shadow-xs" style="width: 56px; height: 56px; overflow: hidden; flex-shrink: 0;">
+                                            {% if item.image_filename %}
+                                                <img src="{{ url_for('static', filename='uploads/parts/' ~ item.image_filename) }}" 
+                                                     onerror="this.onerror=null; this.src='{{ default_image }}';" 
+                                                     alt="{{ item.name }}" class="img-fluid" style="object-fit: cover; width: 100%; height: 100%;">
+                                            {% else %}
+                                                <img src="{{ url_for('static', filename='uploads/parts/gear.jpg') }}" 
+                                                     onerror="this.onerror=null; this.src='https://placehold.co/100x100?text=Parts';" 
+                                                     alt="{{ item.name }}" class="img-fluid" style="object-fit: cover; width: 100%; height: 100%;">
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center flex-grow-1 min-w-0 gap-1 gap-sm-3">
+                                            <div class="min-w-0">
+                                                <div class="fw-bold text-dark fs-7 text-truncate" title="{{ item.name }}">{{ item.name }}</div>
+                                                <small class="text-muted d-block font-monospace fs-9 text-truncate">{{ item.sku }}</small>
+                                            </div>
+                                            <div class="text-sm-end flex-shrink-0">
+                                                <span class="fw-bold text-dark fs-7">₱{{ "{:,.2f}".format(item.price) }}</span>
+                                                <small class="text-muted d-block fs-9">Quantity: {{ item.quantity }}</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+
+                            <div class="row g-3 pt-3 mb-1 fs-9 text-muted">
+                                <div class="col-12 col-sm-6">
+                                    <div class="d-flex align-items-baseline gap-1.5">
+                                        <i class="fa-solid fa-truck-fast text-secondary flex-shrink-0 mt-1 me-1"></i>
+                                        <div class="min-w-0">
+                                            Fulfillment: <strong class="text-dark text-capitalize fs-8">{{ order.fulfillment_method }}</strong>
+                                            {% if order.fulfillment_method == 'delivery' %}
+                                                <span class="d-block text-truncate mt-1 text-muted" title="{{ order.address }}">
+                                                    {{ order.address }}
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-sm-6 text-sm-end">
+                                    <i class="fa-solid fa-credit-card text-secondary me-1"></i>
+                                    Payment Mode: <strong class="text-dark text-uppercase fs-8">{{ order.payment_method }}</strong>
+                                </div>
+                            </div>
+
+                            {% if order.notes %}
+                                <div class="bg-light border-start border-start-3 border-warning rounded-end-3 p-2 mt-3 fs-9">
+                                    <span class="text-secondary fw-bold d-block mb-0.5">Instructions left for shop:</span>
+                                    <span class="text-dark fst-italic">"{{ order.notes }}"</span>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="card-footer py-3 px-3 px-sm-4 border-top border-light-subtle d-flex justify-content-between align-items-center gap-3 flex-wrap">
+                            <div>
+                                <small class="text-muted text-uppercase tracking-wider fs-9 d-block mb-1 fw-bold">Order Total</small>
+                                <span class="fs-4 fw-extrabold text-dark tracking-tight">₱{{ "{:,.2f}".format(order.total_amount) }}</span>
+                            </div>
+                            <div>
+                                <a href="mailto:support@motoshop.com?subject=Inquiry on Order %23{{ order.id }}" class="btn btn-outline-dark btn-sm rounded-pill fw-bold px-3 py-1.5 fs-9">
+                                    <i class="fa-solid fa-envelope me-1"></i> Contact Support
+                                </a>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12 text-center py-5">
+                <div class="text-muted mb-3 opacity-50">
+                    <i class="fa-solid fa-box-open fa-3x"></i>
+                </div>
+                <h4 class="fw-bold text-dark mb-1">No Orders Found</h4>
+                <p class="text-muted fs-8 mx-auto mb-4 px-3" style="max-width: 350px;">You haven't purchased parts yet. Head to our store to look at our component selections.</p>
+                <a href="{{ url_for('dashboard.client_index') }}" class="btn btn-dark rounded-pill fw-bold px-4 py-2 fs-7 shadow-sm">
+                    <i class="fa-solid fa-store text-warning me-1"></i>Explore Catalog
+                </a>
+            </div>
+        {% endif %}
+    </div>
+
+    <div id="noOrdersMessage" class="text-center py-5 d-none">
+        <div class="text-muted mb-3 opacity-50">
+            <i class="fa-solid fa-magnifying-glass fa-3x"></i>
+        </div>
+        <h5 class="fw-bold text-secondary mb-1">No Orders Matching Status</h5>
+        <p class="text-muted fs-8 px-3">Try checking another segment block category ribbon from the list tabs above.</p>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const filterButtons = document.querySelectorAll('.filter-status-btn');
+        const cards = document.querySelectorAll('.order-card-wrapper');
+        const emptyMessage = document.getElementById('noOrdersMessage');
+
+        filterButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                // Handle tab highlight configurations
+                filterButtons.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+
+                const targetStatus = this.getAttribute('data-status');
+                let visibleCount = 0;
+
+                cards.forEach(card => {
+                    const orderStatus = card.getAttribute('data-status');
+                    if (targetStatus === 'all' || orderStatus === targetStatus) {
+                        card.classList.remove('d-none');
+                        visibleCount++;
+                    } else {
+                        card.classList.add('d-none');
+                    }
+                });
+
+                if (visibleCount === 0 && cards.length > 0) {
+                    emptyMessage.classList.remove('d-none');
+                } else {
+                    emptyMessage.classList.add('d-none');
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

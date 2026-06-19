@@ -1,3 +1,4 @@
+# project/app/controllers/checkout_controller.py
 from flask import render_template, request, session, redirect, url_for, flash
 from app.models.cart import Cart
 from app.models.part import Part
@@ -5,7 +6,7 @@ from app.models.order import Order
 from app.services.checkout_service import CheckoutService
 
 class CheckoutController:
-    """Controller guiding both Direct Buy and Shopping Cart Checkout workflows"""
+    """Controller guiding Direct Buy, Shopping Cart Checkout, and Orders list monitoring workflows"""
 
     @staticmethod
     def show_checkout_page():
@@ -25,11 +26,13 @@ class CheckoutController:
                 is_direct_buy = True
                 direct_part_id = part['id']
                 items_to_review.append({
+                    'id': part['id'],
                     'name': part['name'],
                     'sku': part['sku'],
                     'price': part['price'],
                     'quantity': buy_now_qty,
-                    'image_filename': part['image_filename']
+                    'image_filename': part['image_filename'],
+                    'stock_quantity': part['quantity']
                 })
             else:
                 flash("Selected part is no longer available.", "danger")
@@ -43,11 +46,13 @@ class CheckoutController:
             
             for item in cart_items:
                 items_to_review.append({
+                    'id': item['id'],
                     'name': item['name'],
                     'sku': item['sku'],
                     'price': item['price'],
                     'quantity': item['quantity'],
-                    'image_filename': item['image_filename']
+                    'image_filename': item['image_filename'],
+                    'stock_quantity': item['stock_quantity']
                 })
 
         # Calculate total price sum
@@ -57,7 +62,7 @@ class CheckoutController:
         customer_details = {
             'first_name': session.get('first_name', ''),
             'last_name': session.get('last_name', ''),
-            'phone': session.get('phone', '') # empty string if not registered
+            'phone': session.get('phone', '')
         }
 
         return render_template(
@@ -105,7 +110,6 @@ class CheckoutController:
             return redirect(url_for('checkout.success', order_id=result['order_id']))
         else:
             flash(result['message'], "danger")
-            # Build back parameters if failed to redirect gracefully
             if buy_now_id:
                 return redirect(url_for('checkout.view', buy_now_id=buy_now_id, buy_now_qty=buy_now_qty))
             return redirect(url_for('checkout.view'))
@@ -120,3 +124,20 @@ class CheckoutController:
 
         items = Order.get_order_items(order_id)
         return render_template('client-page/order_success.html', order=order, items=items)
+
+    @staticmethod
+    def view_orders():
+        """Fetches and displays past transaction orders list with dynamic item sets"""
+        user_id = session.get('user_id')
+        orders = Order.find_by_user_id(user_id)
+        orders_list = []
+        
+        for order in orders:
+            order_dict = dict(order)
+            # Retrieve joined parts matching order items
+            items = Order.get_order_items(order['id'])
+            # RENAMED from 'items' to 'order_items' to completely prevent python dictionary/Jinja standard method conflicts!
+            order_dict['order_items'] = items
+            orders_list.append(order_dict)
+            
+        return render_template('client-page/orders.html', orders=orders_list)

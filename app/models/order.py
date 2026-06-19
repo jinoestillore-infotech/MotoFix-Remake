@@ -39,3 +39,13 @@ class Order:
             WHERE oi.order_id = %s
         """
         return Database.execute_query(query, (order_id,))
+
+    @staticmethod
+    def find_by_user_id(user_id: int):
+        """Fetches all orders placed by a specific user, sorted from newest to oldest"""
+        query = """
+            SELECT * FROM orders 
+            WHERE user_id = %s 
+            ORDER BY created_at DESC
+        """
+        return Database.execute_query(query, (user_id,))
