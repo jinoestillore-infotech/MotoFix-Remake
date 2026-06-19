@@ -1,10 +1,10 @@
-{% extends 'layouts/base.html' %}
+{% extends 'layouts/client-base.html' %}
 
 {% block title %}Storefront - MotoShop{% endblock %}
 
 {% block content %}
 <!-- Hero Promo Banner Section -->
-<div class="row mb-4 mt-3">
+<div class="row mb-3 mt-3">
     <div class="col-12">
         <div class="card border-0 rounded-4 bg-dark text-white shadow-sm overflow-hidden text-center text-md-start">
             <div class="card-body p-4 p-md-5 d-flex flex-column flex-md-row align-items-center justify-content-between gap-4">
@@ -27,14 +27,14 @@
 </div>
 
 <!-- Category Ribbon Filter -->
-<div class="row mb-4">
+<div class="row mb-4 sticky-top pt-2">
     <div class="col-12">
-        <div class="d-flex align-items-center gap-2 overflow-x-auto pb-2 scrollbar-hidden">
-            <button class="btn btn-dark rounded-pill px-3 btn-sm filter-category-btn fw-semibold" data-category="all">
+        <div class="d-flex align-items-center flex-nowrap gap-2 overflow-x-auto pb-2 scrollbar-hidden">
+            <button class="btn btn-dark rounded-pill px-3 btn-sm filter-category-btn fw-semibold text-nowrap" data-category="all">
                 All Products
             </button>
             {% for category in categories %}
-            <button class="btn btn-light bg-white border border-gray-200 text-secondary rounded-pill px-3 btn-sm filter-category-btn fw-semibold shadow-sm" data-category="{{ category }}">
+            <button class="btn btn-light bg-white border border-gray-200 text-secondary rounded-pill px-3 btn-sm filter-category-btn fw-semibold shadow-sm text-nowrap" data-category="{{ category }}">
                 {{ category }}
             </button>
             {% endfor %}
@@ -43,17 +43,22 @@
 </div>
 
 <!-- Search and Sort Ribbon -->
-<div class="row g-3 mb-4">
-    <div class="col-12 col-md-8">
-        <div class="input-group border-0 shadow-sm rounded-3 overflow-hidden">
-            <span class="input-group-text bg-white border-0 text-muted pe-1"><i class="fa-solid fa-magnifying-glass"></i></span>
-            <input type="text" id="clientSearch" class="form-control border-0 bg-white ps-2 py-2.5 shadow-none" placeholder="Search by spark plugs, brake pads, tires, engines, or brands...">
+<div class="row g-3 mb-4 d-flex justify-content-md-end">
+    <div class="col-12 col-md-5 d-flex justify-content-end">
+        <div class="input-group search-input-group border border-gray-200 shadow-sm rounded-3 overflow-hidden bg-white transition-all">
+            <span class="input-group-text bg-white border-0 text-muted ps-3 pe-2">
+                <i class="fa-solid fa-magnifying-glass fs-7 opacity-75"></i>
+            </span>
+            <input type="text" id="clientSearch" class="form-control border-0 bg-white ps-1 py-2.5 shadow-none fs-7 placeholder-muted" placeholder="Search by spark plugs, brake pads, tires, engines, or brands...">
         </div>
     </div>
-    <div class="col-12 col-md-4">
-        <div class="input-group border-0 shadow-sm rounded-3 overflow-hidden">
-            <span class="input-group-text bg-white border-0 text-muted pe-1"><i class="fa-solid fa-sort"></i></span>
-            <select id="priceSort" class="form-select border-0 bg-white ps-2 py-2.5 shadow-none text-secondary fw-medium">
+    
+    <div class="col-8 col-md-3 d-flex">
+        <div class="input-group sort-input-group border border-gray-200 shadow-sm rounded-3 overflow-hidden bg-white transition-all">
+            <span class="input-group-text bg-white border-0 text-muted ps-3 pe-1">
+                <i class="fa-solid fa-sliders fs-7 opacity-75"></i>
+            </span>
+            <select id="priceSort" class="form-select border-0 bg-white ps-2 py-2 shadow-none text-secondary fw-semibold fs-7 cursor-pointer">
                 <option value="default">Default Sort</option>
                 <option value="low_high">Price: Low to High</option>
                 <option value="high_low">Price: High to Low</option>
@@ -72,7 +77,7 @@
         <div class="col product-card-container" 
              data-name="{{ part.name|lower }}" 
              data-brand="{{ part.brand|lower }}" 
-             data-desc="{{ part.description|lower }}"
+             data-desc="{{ (part.description or '')|lower }}"
              data-category="{{ part.category }}" 
              data-price="{{ part.price }}">
             
@@ -158,6 +163,27 @@
     {% endif %}
 </div>
 
+<div id="noResultsMessage" class="text-center py-5 d-none">
+    <div class="text-muted mb-3 opacity-50">
+        <i class="fa-solid fa-box-open fa-4x"></i>
+    </div>
+    <h5 class="fw-bold text-secondary">No Items Found</h5>
+    <p class="text-muted small">
+        No products are available in this category.
+    </p>
+</div>
+
+<!-- Storefront Pagination Row -->
+<div class="row mt-5 mb-4">
+    <div class="col-12 d-flex justify-content-center">
+        <nav aria-label="Storefront Page Navigation">
+            <ul class="pagination pagination-md mb-0" id="clientPaginationControls">
+                <!-- Dynamically injected page navigation buttons -->
+            </ul>
+        </nav>
+    </div>
+</div>
+
 <style>
     /* Shopee / Lazada Card Styling Extensions */
     .product-card {
@@ -192,6 +218,40 @@
         -ms-overflow-style: none;
         scrollbar-width: none;
     }
+    .filter-category-btn {
+    /* Critical for mobile e-commerce ribbons: stops buttons from compressing or bloating */
+    flex-shrink: 0; 
+    transition: all 0.2s ease;
+    }
+    /* Optional: Subtle touch indicator hint on mobile devices */
+    .scrollbar-hidden {
+        -webkit-overflow-scrolling: touch; 
+    }
+    /* Premium Input Focus Ring Transitions */
+    .search-input-group, .sort-input-group {
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    /* Subtle border highlight when user clicks into the fields */
+    .search-input-group:focus-within, .sort-input-group:focus-within {
+        border-color: #212529 !important; /* Soft dark focus ring instead of harsh browser blue */
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+    }
+
+    /* Polished placeholder style */
+    .placeholder-muted::placeholder {
+        color: #a1a8b0;
+        font-size: 0.875rem;
+    }
+
+    .cursor-pointer {
+        cursor: pointer;
+    }
+
+    /* Base Utility for layout alignment if missing in your main stylesheet */
+    .transition-all {
+        transition: all 0.2s ease;
+    }
     .buy-btn {
         border-color: #212529;
         color: #212529;
@@ -212,6 +272,17 @@
         backdrop-filter: blur(4px);
         -webkit-backdrop-filter: blur(4px);
     }
+    
+    /* Pagination Button Enhancements */
+    .pagination .page-link {
+        transition: all 0.2s ease;
+    }
+    .pagination .page-link:hover {
+        background-color: #212529 !important;
+        color: #fff !important;
+        border-color: #212529 !important;
+    }
+    
     /* Fixed Positioning Helpers */
     .top-2 { top: 0.5rem; }
     .start-2 { left: 0.5rem; }
@@ -230,12 +301,17 @@ document.addEventListener('DOMContentLoaded', function() {
     const categoryButtons = document.querySelectorAll('.filter-category-btn');
     const cards = document.querySelectorAll('.product-card-container');
     const gridContainer = document.getElementById('productsGrid');
+    const noResultsMessage = document.getElementById('noResultsMessage');
 
     let activeCategory = 'all';
+    
+    // Storefront Pagination settings (8 products fits e-commerce grids nicely)
+    const itemsPerPage = 10;
+    let currentPage = 1;
 
     function filterAndSort() {
         const query = searchInput.value.toLowerCase().trim();
-        let visibleCards = [];
+        let matchedCards = [];
 
         // 1. Perform Filtering
         cards.forEach(card => {
@@ -248,27 +324,116 @@ document.addEventListener('DOMContentLoaded', function() {
             const matchesCategory = activeCategory === 'all' || category === activeCategory;
 
             if (matchesSearch && matchesCategory) {
-                card.style.display = '';
-                visibleCards.push(card);
-            } else {
-                card.style.display = 'none';
+                matchedCards.push(card);
             }
+            // Hide all cards initially
+            card.style.display = 'none';
         });
 
         // 2. Perform Sorting
         const sortType = sortSelect.value;
         if (sortType === 'low_high') {
-            visibleCards.sort((a, b) => parseFloat(a.getAttribute('data-price')) - parseFloat(b.getAttribute('data-price')));
+            matchedCards.sort((a, b) => parseFloat(a.getAttribute('data-price')) - parseFloat(b.getAttribute('data-price')));
         } else if (sortType === 'high_low') {
-            visibleCards.sort((a, b) => parseFloat(b.getAttribute('data-price')) - parseFloat(a.getAttribute('data-price')));
+            matchedCards.sort((a, b) => parseFloat(b.getAttribute('data-price')) - parseFloat(a.getAttribute('data-price')));
         }
 
-        // 3. Re-append in sorted order (only if sorted)
-        if (sortType !== 'default') {
-            visibleCards.forEach(card => {
-                gridContainer.appendChild(card);
+        // 3. Paginate Matched Cards
+        const totalEntries = matchedCards.length;
+
+        if (totalEntries === 0) {
+            noResultsMessage.classList.remove('d-none');
+
+            let message;
+
+            if (query) {
+                message = `No products found for "${query}".`;
+            } else if (activeCategory !== 'all') {
+                message = `No items found in the "${activeCategory}" category.`;
+            } else {
+                message = 'No products available.';
+            }
+
+            noResultsMessage.querySelector('p').textContent = message;
+        } else {
+            noResultsMessage.classList.add('d-none');
+        }
+
+        const totalPages = Math.ceil(totalEntries / itemsPerPage) || 1;
+
+        // Clamp page boundaries
+        if (currentPage > totalPages) currentPage = totalPages;
+        if (currentPage < 1) currentPage = 1;
+
+        const startIdx = (currentPage - 1) * itemsPerPage;
+        const endIdx = startIdx + itemsPerPage;
+
+        // Append and display cards in sorted order for the active page slice
+        matchedCards.forEach((card, idx) => {
+            if (idx >= startIdx && idx < endIdx) {
+                card.style.display = '';
+            }
+            gridContainer.appendChild(card); // Re-append to preserve sorting order
+        });
+
+        renderPaginationControls(totalPages);
+    }
+
+    function renderPaginationControls(totalPages) {
+        const controlsContainer = document.getElementById('clientPaginationControls');
+        if (!controlsContainer) return;
+
+        controlsContainer.innerHTML = '';
+
+        // If there's only 1 page, don't show pagination controls
+        if (totalPages <= 1) {
+            controlsContainer.innerHTML = '';
+            return;
+        }
+
+        // Previous page button
+        const prevLi = document.createElement('li');
+        prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+        prevLi.innerHTML = `<a class="page-link border-gray-200 rounded-start-pill px-3 text-dark bg-white shadow-sm" href="#" aria-label="Previous">&laquo;</a>`;
+        if (currentPage !== 1) {
+            prevLi.addEventListener('click', function(e) {
+                e.preventDefault();
+                currentPage--;
+                filterAndSort();
             });
         }
+        controlsContainer.appendChild(prevLi);
+
+        // Individual page number buttons
+        for (let i = 1; i <= totalPages; i++) {
+            const li = document.createElement('li');
+            const isActive = currentPage === i;
+            li.className = `page-item ${isActive ? 'active' : ''}`;
+            li.innerHTML = `
+                <a class="page-link border-gray-200 px-3 shadow-sm ${isActive ? 'bg-dark border-dark text-white fw-bold' : 'text-dark bg-white'}" href="#">
+                    ${i}
+                </a>
+            `;
+            li.addEventListener('click', function(e) {
+                e.preventDefault();
+                currentPage = i;
+                filterAndSort();
+            });
+            controlsContainer.appendChild(li);
+        }
+
+        // Next page button
+        const nextLi = document.createElement('li');
+        nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
+        nextLi.innerHTML = `<a class="page-link border-gray-200 rounded-end-pill px-3 text-dark bg-white shadow-sm" href="#" aria-label="Next">&raquo;</a>`;
+        if (currentPage !== totalPages) {
+            nextLi.addEventListener('click', function(e) {
+                e.preventDefault();
+                currentPage++;
+                filterAndSort();
+            });
+        }
+        controlsContainer.appendChild(nextLi);
     }
 
     // Category button events
@@ -283,13 +448,27 @@ document.addEventListener('DOMContentLoaded', function() {
             this.classList.add('btn-dark');
 
             activeCategory = this.getAttribute('data-category');
+            currentPage = 1; // Reset to page 1 on category change
             filterAndSort();
         });
     });
 
     // Input events
-    if (searchInput) searchInput.addEventListener('input', filterAndSort);
-    if (sortSelect) sortSelect.addEventListener('change', filterAndSort);
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            currentPage = 1; // Reset to page 1 on query search
+            filterAndSort();
+        });
+    }
+    if (sortSelect) {
+        sortSelect.addEventListener('change', function() {
+            currentPage = 1; // Reset to page 1 on sort change
+            filterAndSort();
+        });
+    }
+
+    // Initial render call
+    filterAndSort();
 });
 </script>
 {% endblock %}
