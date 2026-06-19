@@ -1,0 +1,301 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}Inventory Catalog - MotoFix{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <!-- Header Block -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap mb-4 gap-3">
+        <div>
+            <h1 class="h3 mb-1 text-dark fw-bold">Parts Inventory</h1>
+            <p class="text-muted mb-0">Monitor catalog items, update stock counts, and configure pricing benchmarks.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <!-- Back to Dashboard -->
+            <a href="{{ url_for('dashboard.owner_dashboard') }}" class="btn btn-outline-secondary btn-sm rounded-3">
+                <i class="fas fa-arrow-left me-1"></i> Dashboard
+            </a>
+            <!-- Trigger Add Part Modal -->
+            <button class="btn btn-primary btn-sm rounded-3 fw-bold" data-bs-toggle="modal" data-bs-target="#addPartModal">
+                <i class="fas fa-plus me-1"></i> Add New Part
+            </button>
+        </div>
+    </div>
+
+    <!-- Controls Panel (Search and Filter Stats) -->
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-8">
+            <div class="input-group">
+                <span class="input-group-text bg-white border-end-0 text-muted"><i class="fas fa-search"></i></span>
+                <input type="text" id="searchInput" class="form-control border-start-0 shadow-none ps-1" placeholder="Search by SKU, part name, or description...">
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <select class="form-select" id="stockStatusFilter">
+                <option value="all">All Inventory Statuses</option>
+                <option value="in_stock">In Stock</option>
+                <option value="low_stock">Low Stock (Alerts)</option>
+                <option value="out_of_stock">Out of Stock</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Inventory Main Card -->
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-0">
+            {% if parts %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="partsTable">
+                    <thead class="table-light">
+                        <tr class="text-secondary small fw-semibold">
+                            <th class="ps-4 py-3">Part Details</th>
+                            <th class="py-3">SKU Code</th>
+                            <th class="py-3 text-end">Price</th>
+                            <th class="py-3 text-center">Stock Level</th>
+                            <th class="py-3 text-center">Min Threshold</th>
+                            <th class="py-3 text-center">Status</th>
+                            <th class="pe-4 py-3 text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for part in parts %}
+                        {% set is_low = part.quantity <= part.low_stock_threshold %}
+                        {% set is_out = part.quantity == 0 %}
+                        <tr class="part-row" data-name="{{ part.name|lower }}" data-sku="{{ part.sku|lower }}" data-desc="{{ part.description|lower }}" data-status="{% if is_out %}out_of_stock{% elif is_low %}low_stock{% else %}in_stock{% endif %}">
+                            <td class="ps-4">
+                                <div class="fw-bold text-dark">{{ part.name }}</div>
+                                <div class="text-muted text-truncate small" style="max-width: 250px;" title="{{ part.description }}">
+                                    {{ part.description or 'No description provided.' }}
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark border font-monospace px-2 py-1 small">{{ part.sku }}</span>
+                            </td>
+                            <td class="text-end fw-semibold text-dark">
+                                ${{ "%.2f"|format(part.price) }}
+                            </td>
+                            <td class="text-center">
+                                <span class="fw-bold {% if is_out %}text-danger{% elif is_low %}text-warning{% else %}text-success{% endif %}">
+                                    {{ part.quantity }}
+                                </span>
+                            </td>
+                            <td class="text-center text-muted small">
+                                {{ part.low_stock_threshold }}
+                            </td>
+                            <td class="text-center">
+                                {% if is_out %}
+                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill">Out of Stock</span>
+                                {% elif is_low %}
+                                <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill">Low Stock Alert</span>
+                                {% else %}
+                                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">In Stock</span>
+                                {% endif %}
+                            </td>
+                            <td class="pe-4 text-end">
+                                <div class="d-flex justify-content-end gap-2">
+                                    <!-- Edit Trigger Button -->
+                                    <button class="btn btn-outline-primary btn-sm rounded-3 px-2 py-1" data-bs-toggle="modal" data-bs-target="#editPartModal{{ part.id }}" title="Edit Part">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <!-- Delete Trigger Button -->
+                                    <button class="btn btn-outline-danger btn-sm rounded-3 px-2 py-1" data-bs-toggle="modal" data-bs-target="#deletePartModal{{ part.id }}" title="Delete Part">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <div class="text-muted mb-3">
+                    <i class="fas fa-cubes fa-4x text-light-subtle"></i>
+                </div>
+                <h5 class="fw-bold text-secondary">No Inventory Items Found</h5>
+                <p class="text-muted small px-3">Begin by onboarding motorcycle parts, spark plugs, engines, or tire catalog details.</p>
+                <button class="btn btn-primary btn-sm rounded-3 fw-bold mt-2" data-bs-toggle="modal" data-bs-target="#addPartModal">
+                    <i class="fas fa-plus me-1"></i> Add Your First Part
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Add Part -->
+<div class="modal fade" id="addPartModal" tabindex="-1" aria-labelledby="addPartModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-4 shadow-lg">
+            <div class="modal-header border-0 pb-0 pt-4 px-4">
+                <h5 class="modal-title fw-bold text-dark" id="addPartModalLabel">
+                    <i class="fas fa-cube text-primary me-2"></i>Add Part to Catalog
+                </h5>
+                <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('inventory.add') }}" method="POST" class="needs-validation" novalidate>
+                <div class="modal-body p-4">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label for="add_name" class="form-label text-secondary small fw-semibold">Part Name</label>
+                            <input type="text" class="form-control bg-light border-0" id="add_name" name="name" placeholder="e.g. NGK Iridium Spark Plug" required>
+                        </div>
+                        <div class="col-12">
+                            <label for="add_sku" class="form-label text-secondary small fw-semibold">SKU (Stock Keeping Unit)</label>
+                            <input type="text" class="form-control bg-light border-0 text-uppercase" id="add_sku" name="sku" placeholder="e.g. SPK-NGK-9817" pattern="^[A-Za-z0-9\-]+$" required>
+                            <small class="text-muted form-text" style="font-size: 0.75rem;">Only letters, numbers, and hyphens are allowed.</small>
+                        </div>
+                        <div class="col-12">
+                            <label for="add_desc" class="form-label text-secondary small fw-semibold">Description</label>
+                            <textarea class="form-control bg-light border-0" id="add_desc" name="description" rows="2" placeholder="Write key specifications or dimensions..."></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="add_price" class="form-label text-secondary small fw-semibold">Unit Price ($)</label>
+                            <input type="number" step="0.01" min="0" class="form-control bg-light border-0" id="add_price" name="price" placeholder="0.00" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="add_qty" class="form-label text-secondary small fw-semibold">Starting Quantity</label>
+                            <input type="number" min="0" class="form-control bg-light border-0" id="add_qty" name="quantity" placeholder="0" required>
+                        </div>
+                        <div class="col-12">
+                            <label for="add_threshold" class="form-label text-secondary small fw-semibold">Low Stock Warning Threshold</label>
+                            <input type="number" min="0" class="form-control bg-light border-0" id="add_threshold" name="low_stock_threshold" value="5" required>
+                            <small class="text-muted form-text" style="font-size: 0.75rem;">Triggers an alert badge once stock reaches or drops below this number.</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0 pb-4 px-4">
+                    <button type="button" class="btn btn-light rounded-3 fw-semibold" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary rounded-3 fw-bold">Onboard Part</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% if parts %}
+    {% for part in parts %}
+    <!-- Modal: Edit Part -->
+    <div class="modal fade" id="editPartModal{{ part.id }}" tabindex="-1" aria-labelledby="editPartLabel{{ part.id }}" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 rounded-4 shadow-lg">
+                <div class="modal-header border-0 pb-0 pt-4 px-4">
+                    <h5 class="modal-title fw-bold text-dark" id="editPartLabel{{ part.id }}">
+                        <i class="fas fa-edit text-primary me-2"></i>Modify Part Details
+                    </h5>
+                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form action="{{ url_for('inventory.edit', part_id=part.id) }}" method="POST" class="needs-validation" novalidate>
+                    <div class="modal-body p-4">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label for="edit_name{{ part.id }}" class="form-label text-secondary small fw-semibold">Part Name</label>
+                                <input type="text" class="form-control bg-light border-0" id="edit_name{{ part.id }}" name="name" value="{{ part.name }}" required>
+                            </div>
+                            <div class="col-12">
+                                <label for="edit_sku{{ part.id }}" class="form-label text-secondary small fw-semibold">SKU Code</label>
+                                <input type="text" class="form-control bg-light border-0 text-uppercase" id="edit_sku{{ part.id }}" name="sku" value="{{ part.sku }}" pattern="^[A-Za-z0-9\-]+$" required>
+                            </div>
+                            <div class="col-12">
+                                <label for="edit_desc{{ part.id }}" class="form-label text-secondary small fw-semibold">Description</label>
+                                <textarea class="form-control bg-light border-0" id="edit_desc{{ part.id }}" name="description" rows="2">{{ part.description or '' }}</textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="edit_price{{ part.id }}" class="form-label text-secondary small fw-semibold">Unit Price ($)</label>
+                                <input type="number" step="0.01" min="0" class="form-control bg-light border-0" id="edit_price{{ part.id }}" name="price" value="{{ part.price }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="edit_qty{{ part.id }}" class="form-label text-secondary small fw-semibold">Stock Quantity</label>
+                                <input type="number" min="0" class="form-control bg-light border-0" id="edit_qty{{ part.id }}" name="quantity" value="{{ part.quantity }}" required>
+                            </div>
+                            <div class="col-12">
+                                <label for="edit_threshold{{ part.id }}" class="form-label text-secondary small fw-semibold">Low Stock Threshold</label>
+                                <input type="number" min="0" class="form-control bg-light border-0" id="edit_threshold{{ part.id }}" name="low_stock_threshold" value="{{ part.low_stock_threshold }}" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0 pt-0 pb-4 px-4">
+                        <button type="button" class="btn btn-light rounded-3 fw-semibold" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary rounded-3 fw-bold">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Delete Part Confirmation -->
+    <div class="modal fade" id="deletePartModal{{ part.id }}" tabindex="-1" aria-labelledby="deletePartLabel{{ part.id }}" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content border-0 rounded-4 shadow-lg">
+                <div class="modal-body p-4 text-center">
+                    <div class="text-danger mb-3">
+                        <i class="fas fa-exclamation-circle fa-3x"></i>
+                    </div>
+                    <h5 class="fw-bold text-dark mb-2">Delete Part?</h5>
+                    <p class="text-muted small mb-0">Are you sure you want to remove <strong class="text-dark">{{ part.name }}</strong> ({{ part.sku }}) from the catalog? This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer border-0 d-flex justify-content-center gap-2 pb-4 pt-0">
+                    <button type="button" class="btn btn-light rounded-3 fw-semibold px-3" data-bs-dismiss="modal">Cancel</button>
+                    <form action="{{ url_for('inventory.delete', part_id=part.id) }}" method="POST">
+                        <button type="submit" class="btn btn-danger rounded-3 fw-bold px-3">Confirm Delete</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+{% endif %}
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('searchInput');
+        const stockFilter = document.getElementById('stockStatusFilter');
+        const rows = document.querySelectorAll('.part-row');
+
+        // Combined filter function
+        function filterParts() {
+            const searchValue = searchInput.value.toLowerCase().trim();
+            const filterValue = stockFilter.value;
+
+            rows.forEach(row => {
+                const name = row.getAttribute('data-name');
+                const sku = row.getAttribute('data-sku');
+                const desc = row.getAttribute('data-desc');
+                const status = row.getAttribute('data-status');
+
+                // Search query matching
+                const matchesSearch = name.includes(searchValue) || 
+                                      sku.includes(searchValue) || 
+                                      desc.includes(searchValue);
+
+                // Dropdown status matching
+                const matchesStatus = (filterValue === 'all') || (status === filterValue);
+
+                if (matchesSearch && matchesStatus) {
+                    row.style.setProperty('display', '', 'important');
+                } else {
+                    row.style.setProperty('display', 'none', 'important');
+                }
+            });
+        }
+
+        // Attach event listeners for real-time responsiveness
+        if(searchInput) searchInput.addEventListener('input', filterParts);
+        if(stockFilter) stockFilter.addEventListener('change', filterParts);
+
+        // Bootstrap 5 client-side form validation
+        var forms = document.querySelectorAll('.needs-validation')
+        Array.prototype.slice.call(forms).forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault()
+                    event.stopPropagation()
+                }
+                form.classList.add('was-validated')
+            }, false)
+        });
+    });
+</script>
+{% endblock %}

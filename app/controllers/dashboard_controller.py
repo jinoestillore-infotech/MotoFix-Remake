@@ -1,6 +1,7 @@
 from flask import render_template, session
 from app.database import Database
 from app.models.user import User
+from app.models.part import Part
 
 class DashboardController:
     """Controller navigating authorized dashboard sessions"""
@@ -25,6 +26,9 @@ class DashboardController:
             # Count Mechanics (Role ID: 2)
             res_mechanics = Database.execute_query("SELECT COUNT(*) as count FROM users WHERE role_id = 2")
             stats['total_mechanics'] = res_mechanics[0]['count'] if res_mechanics else 0
+            
+            # Fetch low-stock parts using our Part model method
+            stats['low_stock_parts'] = Part.get_low_stock_count()
             
             # Fetch mechanics list to display on dashboard
             mechanics = Database.execute_query(
