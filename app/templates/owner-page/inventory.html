@@ -51,7 +51,7 @@
     </div>
 
     <!-- Inventory Main Card -->
-    <div class="card border border-light-subtle shadow-sm rounded-4">
+    <div class="card border border-light-subtle shadow-sm rounded-4 overflow-hidden">
         <div class="card-body p-0">
             {% if parts %}
             <div class="table-responsive">
@@ -63,7 +63,6 @@
                             <th class="py-3 fw-semibold">SKU Code</th>
                             <th class="py-3 text-end fw-semibold">Price</th>
                             <th class="py-3 text-center fw-semibold">Stock Level</th>
-                            <th class="py-3 text-center fw-semibold">Min Threshold</th>
                             <th class="py-3 text-center fw-semibold">Status</th>
                             <th class="pe-4 py-3 text-end fw-semibold">Actions</th>
                         </tr>
@@ -80,7 +79,7 @@
                                     <div class="border rounded-3 bg-light d-flex align-items-center justify-content-center shadow-sm text-center" style="width: 52px; height: 52px; overflow: hidden; flex-shrink: 0;">
                                         {% if part.image_filename %}
                                             <img src="{{ url_for('static', filename='uploads/parts/' ~ part.image_filename) }}" 
-                                                 onerror="this.onerror=null; this.src='{{ default_image }}';"
+                                                 onerror="this.onerror=null; this.src='{{ default_image }}';" 
                                                  alt="{{ part.name }}" class="img-fluid" style="object-fit: cover; width: 100%; height: 100%;">
                                         {% else %}
                                             <img src="{{ url_for('static', filename='uploads/parts/gear.jpg') }}" 
@@ -115,10 +114,6 @@
                                     {{ part.quantity }}
                                 </span>
                             </td>
-                            <!-- Minimum Threshold -->
-                            <td class="text-center text-muted small py-3">
-                                {{ part.low_stock_threshold }}
-                            </td>
                             <!-- Status Badges -->
                             <td class="text-center py-3">
                                 {% if is_out %}
@@ -146,6 +141,18 @@
                         {% endfor %}
                     </tbody>
                 </table>
+            </div>
+
+            <!-- Client-side Pagination Footer -->
+            <div class="card-footer bg-white border-top border-light-subtle py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div class="text-muted small">
+                    Showing <span id="startIndex" class="fw-bold text-dark">0</span> to <span id="endIndex" class="fw-bold text-dark">0</span> of <span id="totalEntries" class="fw-bold text-dark">0</span> entries
+                </div>
+                <nav aria-label="Inventory Page Navigation">
+                    <ul class="pagination pagination-sm mb-0" id="paginationControls">
+                        <!-- Controls dynamically injected here -->
+                    </ul>
+                </nav>
             </div>
             {% else %}
             <div class="text-center py-5">
@@ -326,11 +333,19 @@
         const categoryFilter = document.getElementById('categoryFilter');
         const rows = document.querySelectorAll('.part-row');
 
-        function filterParts() {
+        // Pagination parameters
+        const rowsPerPage = 5;
+        let currentPage = 1;
+        let filteredRows = [];
+
+        function filterAndPaginateParts() {
             const searchValue = searchInput.value.toLowerCase().trim();
             const filterValue = stockFilter.value;
             const categoryValue = categoryFilter.value;
 
+            filteredRows = [];
+
+            // 1. First, apply filters to determine matched items
             rows.forEach(row => {
                 const name = row.getAttribute('data-name');
                 const sku = row.getAttribute('data-sku');
@@ -339,30 +354,143 @@
                 const status = row.getAttribute('data-status');
                 const category = row.getAttribute('data-category');
 
-                // Match name, SKU, brand, or description
                 const matchesSearch = name.includes(searchValue) || 
                                       sku.includes(searchValue) || 
                                       brand.includes(searchValue) ||
                                       desc.includes(searchValue);
 
-                // Match stock status
                 const matchesStatus = (filterValue === 'all') || (status === filterValue);
-
-                // Match category
                 const matchesCategory = (categoryValue === 'all') || (category === categoryValue);
 
                 if (matchesSearch && matchesStatus && matchesCategory) {
-                    row.style.setProperty('display', '', 'important');
+                    filteredRows.push(row);
                 } else {
                     row.style.setProperty('display', 'none', 'important');
                 }
             });
+
+            const totalEntries = filteredRows.length;
+            const totalPages = Math.ceil(totalEntries / rowsPerPage) || 1;
+
+            // Clamp current page bounds
+            if (currentPage > totalPages) {
+                currentPage = totalPages;
+            }
+            if (currentPage < 1) {
+                currentPage = 1;
+            }
+
+            // Calculate start and end indexes
+            const startIdx = (currentPage - 1) * rowsPerPage;
+            const endIdx = startIdx + rowsPerPage;
+
+            // 2. Hide all rows initially
+            rows.forEach(row => {
+                row.style.setProperty('display', 'none', 'important');
+            });
+
+            // 3. Display only the rows that correspond to the current page slice
+            filteredRows.forEach((row, index) => {
+                if (index >= startIdx && index < endIdx) {
+                    row.style.setProperty('display', '', 'important');
+                }
+            });
+
+            // Update statistical indicators in the footer
+            const displayStart = totalEntries === 0 ? 0 : startIdx + 1;
+            const displayEnd = Math.min(endIdx, totalEntries);
+            
+            const startIndexEl = document.getElementById('startIndex');
+            const endIndexEl = document.getElementById('endIndex');
+            const totalEntriesEl = document.getElementById('totalEntries');
+            
+            if (startIndexEl) startIndexEl.textContent = displayStart;
+            if (endIndexEl) endIndexEl.textContent = displayEnd;
+            if (totalEntriesEl) totalEntriesEl.textContent = totalEntries;
+
+            renderPaginationControls(totalPages);
         }
 
-        if (searchInput) searchInput.addEventListener('input', filterParts);
-        if (stockFilter) stockFilter.addEventListener('change', filterParts);
-        if (categoryFilter) categoryFilter.addEventListener('change', filterParts);
+        function renderPaginationControls(totalPages) {
+            const controlsContainer = document.getElementById('paginationControls');
+            if (!controlsContainer) return;
 
+            controlsContainer.innerHTML = '';
+
+            // Don't render navigation controls if there is only 1 page or none
+            if (totalPages <= 1) {
+                return;
+            }
+
+            // Previous Button Link
+            const prevLi = document.createElement('li');
+            prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+            prevLi.innerHTML = `<a class="page-link border-light-subtle rounded-start-pill px-3 text-dark shadow-none" href="#" aria-label="Previous">&laquo;</a>`;
+            if (currentPage !== 1) {
+                prevLi.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    currentPage--;
+                    filterAndPaginateParts();
+                });
+            }
+            controlsContainer.appendChild(prevLi);
+
+            // Page Numbers Links
+            for (let i = 1; i <= totalPages; i++) {
+                const li = document.createElement('li');
+                const isActive = currentPage === i;
+                li.className = `page-item ${isActive ? 'active' : ''}`;
+                li.innerHTML = `
+                    <a class="page-link border-light-subtle px-3 shadow-none ${isActive ? 'bg-dark border-dark text-white fw-bold' : 'text-dark'}" href="#">
+                        ${i}
+                    </a>
+                `;
+                li.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    currentPage = i;
+                    filterAndPaginateParts();
+                });
+                controlsContainer.appendChild(li);
+            }
+
+            // Next Button Link
+            const nextLi = document.createElement('li');
+            nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
+            nextLi.innerHTML = `<a class="page-link border-light-subtle rounded-end-pill px-3 text-dark shadow-none" href="#" aria-label="Next">&raquo;</a>`;
+            if (currentPage !== totalPages) {
+                nextLi.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    currentPage++;
+                    filterAndPaginateParts();
+                });
+            }
+            controlsContainer.appendChild(nextLi);
+        }
+
+        // Event Listeners reset current page to 1 on input/change
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                currentPage = 1;
+                filterAndPaginateParts();
+            });
+        }
+        if (stockFilter) {
+            stockFilter.addEventListener('change', function() {
+                currentPage = 1;
+                filterAndPaginateParts();
+            });
+        }
+        if (categoryFilter) {
+            categoryFilter.addEventListener('change', function() {
+                currentPage = 1;
+                filterAndPaginateParts();
+            });
+        }
+
+        // Initialize state engine
+        filterAndPaginateParts();
+
+        // Standard client-side HTML input validation checks
         var forms = document.querySelectorAll('.needs-validation')
         Array.prototype.slice.call(forms).forEach(function (form) {
             form.addEventListener('submit', function (event) {
