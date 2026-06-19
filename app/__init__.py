@@ -14,12 +14,14 @@ def create_app():
     from app.routes.auth_routes import auth_bp
     from app.routes.dashboard_routes import dashboard_bp
     from app.routes.inventory_routes import inventory_bp
-    
+    from app.routes.cart_routes import cart_bp
+
     # Register blueprints
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(dashboard_bp, url_prefix='/dashboard')
     app.register_blueprint(inventory_bp, url_prefix='/inventory')
-
+    app.register_blueprint(cart_bp, url_prefix='/cart')
+    
     # Default index path logic fallback
     @app.route('/')
     def index():

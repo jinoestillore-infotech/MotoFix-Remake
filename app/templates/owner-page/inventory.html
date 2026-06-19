@@ -143,6 +143,14 @@
                 </table>
             </div>
 
+            <div id="noResultsMessage" class="text-center py-5 d-none">
+                <div class="text-muted mb-3">
+                    <i class="fas fa-box-open fa-3x text-body-tertiary"></i>
+                </div>
+                <h6 class="fw-bold text-secondary">No Items Found</h6>
+                <p class="text-muted small mb-0"></p>
+            </div>
+
             <!-- Client-side Pagination Footer -->
             <div class="card-footer bg-white border-top border-light-subtle py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <div class="text-muted small">
@@ -370,6 +378,47 @@
             });
 
             const totalEntries = filteredRows.length;
+
+            const noResultsMessage = document.getElementById('noResultsMessage');
+            const tableContainer = document.querySelector('.table-responsive');
+            const footerContainer = document.querySelector('.card-footer');
+
+            if (totalEntries === 0) {
+                noResultsMessage.classList.remove('d-none');
+
+                let message = 'No inventory items match the selected filters.';
+
+                if (categoryValue !== 'all') {
+                    message = `No "${searchValue}" found in the "${categoryValue}" category.`;
+                } else if (filterValue !== 'all') {
+                    message = `No items found with "${filterValue.replace('_', ' ')}" status.`;
+                } else if (searchValue) {
+                    message = `No items found matching "${searchValue}".`;
+                }
+
+                noResultsMessage.querySelector('p').textContent = message;
+
+                if (tableContainer) {
+                    tableContainer.classList.add('d-none');
+                }
+
+                if (footerContainer) {
+                    footerContainer.classList.add('d-none');
+                }
+
+                return;
+            } else {
+                noResultsMessage.classList.add('d-none');
+
+                if (tableContainer) {
+                    tableContainer.classList.remove('d-none');
+                }
+
+                if (footerContainer) {
+                    footerContainer.classList.remove('d-none');
+                }
+            }
+
             const totalPages = Math.ceil(totalEntries / rowsPerPage) || 1;
 
             // Clamp current page bounds

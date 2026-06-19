@@ -1,3 +1,4 @@
+<!-- project/app/templates/client-page/index.html -->
 {% extends 'layouts/client-base.html' %}
 
 {% block title %}Storefront - MotoShop{% endblock %}
@@ -71,86 +72,7 @@
 <div class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3 g-md-4" id="productsGrid">
     {% if parts %}
         {% for part in parts %}
-        {% set is_out = part.quantity == 0 %}
-        {% set is_low = part.quantity <= part.low_stock_threshold %}
-        {% set default_image = url_for('static', filename='uploads/parts/gear.jpg') %}
-        <div class="col product-card-container" 
-             data-name="{{ part.name|lower }}" 
-             data-brand="{{ part.brand|lower }}" 
-             data-desc="{{ (part.description or '')|lower }}"
-             data-category="{{ part.category }}" 
-             data-price="{{ part.price }}">
-            
-            <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden product-card position-relative {% if is_out %}opacity-75{% endif %}">
-                <!-- Image Wrapper with Fixed Aspect Ratio -->
-                <div class="position-relative bg-light overflow-hidden d-flex align-items-center justify-content-center w-100" style="aspect-ratio: 1/1;">
-                    {% if part.image_filename %}
-                        <img src="{{ url_for('static', filename='uploads/parts/' ~ part.image_filename) }}" 
-                             onerror="this.onerror=null; this.src='{{ default_image }}';" 
-                             alt="{{ part.name }}" class="img-fluid product-img">
-                    {% else %}
-                        <img src="{{ url_for('static', filename='uploads/parts/gear.jpg') }}" 
-                             onerror="this.onerror=null; this.src='https://placehold.co/250x250?text=Parts';" 
-                             alt="{{ part.name }}" class="img-fluid product-img">
-                    {% endif %}
-                    
-                    <!-- Floating Brand Tag -->
-                    <span class="position-absolute top-2 start-2 badge bg-dark bg-opacity-75 text-white fw-bold px-2.5 py-1.5 rounded-3 fs-8">
-                        {{ part.brand }}
-                    </span>
-
-                    <!-- Floating Stock Warnings -->
-                    {% if is_out %}
-                        <div class="position-absolute top-0 start-0 w-100 h-100 bg-dark bg-opacity-40 d-flex align-items-center justify-content-center backdrop-blur-sm">
-                            <span class="badge bg-danger px-3 py-2 rounded-pill fw-bold text-uppercase fs-7 shadow">Sold Out</span>
-                        </div>
-                    {% elif is_low %}
-                        <span class="position-absolute bottom-2 end-2 badge bg-warning text-dark fw-bold px-2 py-1.5 rounded-2 fs-9 shadow-sm">
-                            Only {{ part.quantity }} left!
-                        </span>
-                    {% endif %}
-                </div>
-
-                <!-- Card Content -->
-                <div class="card-body p-3 d-flex flex-column justify-content-between">
-                    <div class="mb-1">
-                        <!-- Category Indicator -->
-                        <span class="text-uppercase tracking-wider text-muted fw-bold d-block mb-1" style="font-size: 0.65rem; color: #8c949c !important;">
-                            {{ part.category }}
-                        </span>
-                        <!-- Title -->
-                        <h6 class="card-title text-dark fw-bold mb-1 text-truncate-1" title="{{ part.name }}">
-                            {{ part.name }}
-                        </h6>
-                        <!-- Description -->
-                        <p class="text-muted small mb-0 text-truncate-1" style="font-size: 0.75rem;">
-                            {{ part.description or 'No specifications listed.' }}
-                        </p>
-                    </div>
-
-                    <!-- Price & Action Row -->
-                    <div>
-                        <div class="d-flex align-items-baseline gap-1 mt-0 mb-3">
-                            <span class="fs-7 fw-bold text-danger">₱</span>
-                            <span class="fs-4 fw-extrabold text-dark tracking-tight">{{ "{:,.2f}".format(part.price) }}</span>
-                        </div>
-
-                        <!-- Inquiry Button -->
-                        <div class="d-grid">
-                            {% if is_out %}
-                                <button class="btn btn-light text-muted btn-sm rounded-pill fw-bold border" disabled>
-                                    Out of Stock
-                                </button>
-                            {% else %}
-                                <a href="mailto:support@motoshop.com?subject=Inquiry regarding {{ part.name }} (SKU: {{ part.sku }})" class="btn btn-outline-dark btn-sm rounded-pill fw-bold transition-all buy-btn py-1.5">
-                                    <i class="fa-solid fa-cart-shopping me-1 text-warning"></i> Buy / Inquire
-                                </a>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+            {% include 'client-page/partials/_product_card.html' %}
         {% endfor %}
     {% else %}
         <div class="col-12 py-5 text-center w-100">
@@ -254,7 +176,7 @@
     }
     .buy-btn {
         border-color: #212529;
-        color: #212529;
+        color: #ffffff;
     }
     .buy-btn:hover {
         background-color: #212529 !important;
@@ -308,6 +230,53 @@ document.addEventListener('DOMContentLoaded', function() {
     // Storefront Pagination settings (8 products fits e-commerce grids nicely)
     const itemsPerPage = 10;
     let currentPage = 1;
+
+    function bindAddToCartEvents() {
+        document.querySelectorAll('.add-to-cart-action-btn').forEach(btn => {
+            // Remove existing listener to prevent duplicate clicks
+            btn.replaceWith(btn.cloneNode(true));
+        });
+
+        document.querySelectorAll('.add-to-cart-action-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const partId = this.getAttribute('data-part-id');
+                const partName = this.getAttribute('data-part-name');
+                
+                // Disable button temporarily to prevent double submission
+                this.disabled = true;
+                this.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Adding...`;
+
+                fetch('/cart/add', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ part_id: partId, quantity: 1 })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    this.disabled = false;
+                    this.innerHTML = `<i class="fa-solid fa-cart-plus me-1 text-warning"></i> Add to Cart`;
+                    
+                    if (data.success) {
+                        window.showSystemToast(data.message, true);
+                        if (window.refreshCartBadge) {
+                            window.refreshCartBadge();
+                        }
+                    } else {
+                        window.showSystemToast(data.message, false);
+                    }
+                })
+                .catch(err => {
+                    this.disabled = false;
+                    this.innerHTML = `<i class="fa-solid fa-cart-plus me-1 text-warning"></i> Add to Cart`;
+                    console.error("Cart failure:", err);
+                    window.showSystemToast("Could not contact the server. Please try again.", false);
+                });
+            });
+        });
+    }
 
     function filterAndSort() {
         const query = searchInput.value.toLowerCase().trim();
@@ -377,6 +346,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         renderPaginationControls(totalPages);
+        bindAddToCartEvents();
     }
 
     function renderPaginationControls(totalPages) {
