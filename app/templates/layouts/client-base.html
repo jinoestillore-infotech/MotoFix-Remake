@@ -69,7 +69,7 @@
                 Orders
                 <span class="badge bg-danger rounded-pill ms-1 d-none" id="global-order-badge">0</span>
             </a>
-            <a href="#">
+            <a href="{{ url_for('appointment.list_appointments') }}" class="{% if request.endpoint == 'appointment.list_appointments' %}active{% endif %}">
                 <i class="fa-solid fa-calendar-check me-1"></i>
                 Appointments
             </a>
@@ -168,7 +168,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const meta = document.querySelector('meta[name="csrf-token"]');
         return meta ? meta.getAttribute('content') : '';
     };
-    
+
     // Function to load cart count live
     window.refreshCartBadge = function() {
         fetch('/cart/count')

@@ -17,9 +17,9 @@
                 <div class="d-flex flex-column gap-2 text-center text-md-end w-100 w-md-auto" style="min-width: 220px;">
                     <div class="p-3 bg-secondary bg-opacity-25 border border-secondary border-opacity-50 rounded-3 text-center">
                         <small class="text-white-50 d-block uppercase fw-bold tracking-wider fs-8 mb-1">Need Maintenance?</small>
-                        <button class="btn btn-warning btn-sm w-100 fw-bold rounded-pill text-dark" disabled>
-                            <i class="fa-solid fa-calendar-check me-1"></i> Book Appointment (Soon)
-                        </button>
+                        <a href="{{ url_for('appointment.list_appointments') }}" class="btn btn-warning btn-sm w-100 fw-bold rounded-pill text-dark">
+                            <i class="fa-solid fa-calendar-check me-1"></i> Book Appointment
+                        </a>
                     </div>
                 </div>
             </div>

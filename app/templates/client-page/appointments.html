@@ -1,0 +1,273 @@
+{% extends 'layouts/client-base.html' %}
+
+{% block title %}My Appointments - MotoShop{% endblock %}
+
+{% block content %}
+<style>
+    .fs-7 { font-size: 0.875rem; }
+    .fs-8 { font-size: 0.8rem; }
+    .fs-9 { font-size: 0.75rem; }
+    .fw-extrabold { font-weight: 800; }
+    .cursor-pointer { cursor: pointer; }
+    
+    /* Floating modern status badge */
+    .status-badge-custom {
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        font-size: 0.7rem;
+        padding: 0.35rem 0.75rem;
+    }
+</style>
+
+<div class="container py-3 py-md-4">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4 px-1">
+        <div>
+            <h2 class="fw-extrabold text-dark mb-1">Service Appointments</h2>
+            <p class="text-muted small mb-0">Track maintenance schedules, request diagnostic checks, or book a new repair slot.</p>
+        </div>
+        <div>
+            <!-- Trigger Book Appointment Modal -->
+            <button class="btn btn-dark rounded-pill fw-bold px-4 py-2 fs-7 shadow-sm" data-bs-toggle="modal" data-bs-target="#bookAppointmentModal">
+                <i class="fa-solid fa-calendar-plus text-warning me-1"></i> Book New Appointment
+            </button>
+        </div>
+    </div>
+
+    <!-- Active Schedules Grid -->
+    <div class="row g-3" id="appointmentsGrid">
+        {% if appointments %}
+            {% for appt in appointments %}
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="card h-100 border border-light-subtle shadow-sm rounded-4 overflow-hidden bg-white">
+                        
+                        <!-- Header mapping appointment context status badges -->
+                        <div class="card-header bg-light border-bottom d-flex justify-content-between align-items-center py-3 px-3">
+                            <div>
+                                <span class="d-block text-dark fw-bold text-truncate" style="max-width: 180px;">
+                                    {{ appt.motorcycle_name }}
+                                </span>
+                                <small class="text-muted font-monospace fs-9">Plate: {{ appt.plate_number }}</small>
+                            </div>
+                            <div>
+                                <span class="badge rounded-pill status-badge-custom
+                                    {% if appt.status == 'Pending' %}
+                                        bg-warning-subtle text-warning border border-warning-subtle
+                                    {% elif appt.status == 'Approved' %}
+                                        bg-primary-subtle text-primary border border-primary-subtle
+                                    {% elif appt.status == 'Completed' %}
+                                        bg-success-subtle text-success border border-success-subtle
+                                    {% else %}
+                                        bg-danger-subtle text-danger border border-danger-subtle
+                                    {% endif %}">
+                                    {{ appt.status }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Card Body Details -->
+                        <div class="card-body p-3">
+                            <div class="d-flex flex-column gap-2 mb-3">
+                                <div class="d-flex justify-content-between text-muted fs-8">
+                                    <span><i class="fa-regular fa-calendar me-1"></i>Date Requested:</span>
+                                    <!-- Safe check for string vs datetime types -->
+                                    <strong class="text-dark">{{ appt.appointment_date.strftime('%b %d, %Y') if appt.appointment_date is not string else appt.appointment_date }}</strong>
+                                </div>
+                                <div class="d-flex justify-content-between text-muted fs-8">
+                                    <span><i class="fa-regular fa-clock me-1"></i>Target Time:</span>
+                                    <strong class="text-dark">
+                                        {% set t_str = appt.appointment_time|string %}
+                                        {% if t_str|length == 7 %}
+                                            {% set t_str = '0' ~ t_str %}
+                                        {% endif %}
+                                        
+                                        {% if '08:00' in t_str %}
+                                            08:00 AM - 09:00 AM
+                                        {% elif '09:05' in t_str %}
+                                            09:05 AM - 10:00 AM
+                                        {% elif '10:05' in t_str %}
+                                            10:05 AM - 11:00 AM
+                                        {% elif '13:05' in t_str %}
+                                            01:05 PM - 02:00 PM
+                                        {% elif '14:05' in t_str %}
+                                            02:05 PM - 03:00 PM
+                                        {% elif '15:05' in t_str %}
+                                            03:05 PM - 05:00 PM
+                                        {% else %}
+                                            {% set t_parts = t_str.split(':') %}
+                                            {% if t_parts|length >= 2 %}
+                                                {{ t_parts[0] }}:{{ t_parts[1] }}
+                                            {% else %}
+                                                {{ t_str }}
+                                            {% endif %}
+                                        {% endif %}
+                                    </strong>
+                                </div>
+                                <div class="d-flex justify-content-between text-muted fs-8">
+                                    <span><i class="fa-solid fa-user-gear me-1"></i>Assigned Mechanic:</span>
+                                    <strong class="text-dark">
+                                        {% if appt.mechanic_id %}
+                                            {{ appt.mechanic_first }} {{ appt.mechanic_last }}
+                                        {% else %}
+                                            <span class="text-muted fst-italic">Awaiting...</span>
+                                        {% endif %}
+                                    </strong>
+                                </div>
+                            </div>
+
+                            <div class="bg-light p-2 rounded-3 border">
+                                <span class="text-secondary fw-bold d-block mb-1 fs-9">Reason for Appointment:</span>
+                                <p class="mb-0 text-dark small text-truncate-2 fs-8" title="{{ appt.reason }}">
+                                    "{{ appt.reason }}"
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Footer actions allowing cancellation securely in real-time -->
+                        <div class="card-footer bg-light border-top py-2 px-3 d-flex justify-content-between align-items-center">
+                            <small class="text-muted fs-9">ID: #0001-{{ appt.id }}</small>
+                            {% if appt.status == 'Pending' %}
+                                <button class="btn btn-outline-danger btn-sm rounded-pill fw-bold py-1 px-3 fs-9" data-bs-toggle="modal" data-bs-target="#cancelModal{{ appt.id }}">
+                                    Cancel Request
+                                </button>
+                            {% else %}
+                                <span class="text-muted fs-9 fst-italic">Locked slot</span>
+                            {% endif %}
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Secure Cancellation confirmation modal -->
+                <div class="modal fade" id="cancelModal{{ appt.id }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered modal-sm">
+                        <div class="modal-content border-0 rounded-4 shadow-lg text-dark overflow-hidden">
+                            <div class="modal-body p-4 text-center bg-white">
+                                <div class="text-danger mb-3">
+                                    <i class="fa-regular fa-circle-xmark fa-3x"></i>
+                                </div>
+                                <h5 class="fw-bold text-dark mb-2">Cancel Service?</h5>
+                                <p class="text-muted small mb-4">Are you sure you want to drop your appointment slot for <strong class="text-dark">{{ appt.motorcycle_name }}</strong>?</p>
+                                <div class="d-flex justify-content-center gap-2">
+                                    <button type="button" class="btn btn-light rounded-pill fw-semibold px-3 fs-9" data-bs-dismiss="modal">Go back</button>
+                                    <form action="{{ url_for('appointment.cancel', appointment_id=appt.id) }}" method="POST" class="m-0">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-danger rounded-pill fw-bold px-3 fs-9">Yes, Cancel</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <!-- Fallback illustration card if list empty -->
+            <div class="col-12 py-5 text-center">
+                <div class="text-muted mb-3 opacity-30">
+                    <i class="fa-solid fa-calendar-check fa-4x"></i>
+                </div>
+                <h4 class="fw-bold text-dark mb-1">No Appointments Booked</h4>
+                <p class="text-muted fs-8 mx-auto mb-4 px-3" style="max-width: 380px;">Request a maintenance slot today. Your requests will appear here for tracking immediately after review.</p>
+                <button class="btn btn-dark rounded-pill fw-bold px-4 py-2 fs-7 shadow-sm" data-bs-toggle="modal" data-bs-target="#bookAppointmentModal">
+                    <i class="fa-solid fa-calendar-plus text-warning me-1"></i> Book Your First Appointment
+                </button>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal: Book New Appointment -->
+<div class="modal fade" id="bookAppointmentModal" tabindex="-1" aria-labelledby="bookAppointmentLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
+            <div class="modal-header bg-dark text-white py-3 px-4 align-items-center border-0">
+                <h5 class="modal-title fw-bold fs-5 tracking-tight" id="bookAppointmentLabel">
+                    <i class="fa-solid fa-calendar-check text-warning me-2"></i>Book Service Appointment
+                </h5>
+                <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <form action="{{ url_for('appointment.book') }}" method="POST" class="needs-validation" novalidate id="appointmentBookingForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <div class="modal-body p-4 bg-white text-dark">
+                    <div class="row g-3">
+                        <!-- Motorcycle Name -->
+                        <div class="col-12 col-sm-8">
+                            <label for="motorcycle_name" class="form-label text-dark small fw-semibold">Motorcycle Brand & Model</label>
+                            <input type="text" class="form-control border-light-subtle py-2" id="motorcycle_name" name="motorcycle_name" placeholder="e.g. Honda Click 125i, Yamaha Aerox 155" required>
+                            <div class="invalid-feedback small">Motorcycle details are required.</div>
+                        </div>
+
+                        <!-- Plate Number -->
+                        <div class="col-12 col-sm-4">
+                            <label for="plate_number" class="form-label text-dark small fw-semibold">Plate Number</label>
+                            <input type="text" class="form-control border-light-subtle py-2 text-uppercase" id="plate_number" name="plate_number" placeholder="e.g. MC1234, Temp Plate">
+                        </div>
+
+                        <!-- Target Schedule Date -->
+                        <div class="col-12 col-sm-6">
+                            <label for="appointment_date" class="form-label text-dark small fw-semibold">Schedule Date</label>
+                            <input type="date" class="form-control border-light-subtle py-2" id="appointment_date" name="appointment_date" required>
+                            <div class="invalid-feedback small">Please pick a target schedule date.</div>
+                        </div>
+
+                        <!-- Target Schedule Time Slot -->
+                        <div class="col-12 col-sm-6">
+                            <label for="appointment_time" class="form-label text-dark small fw-semibold">Preferred Time Slot</label>
+                            <select class="form-select border-light-subtle py-2" id="appointment_time" name="appointment_time" required>
+                                <option value="" selected disabled>Select Time Slot</option>
+                                <option value="08:00:00">08:00 AM - 09:00 AM</option>
+                                <option value="09:05:00">09:05 AM - 10:00 AM</option>
+                                <option value="10:05:00">10:05 AM - 11:00 AM</option>
+                                <option value="13:05:00">01:05 PM - 02:00 PM</option>
+                                <option value="14:05:00">02:05 PM - 03:00 PM</option>
+                                <option value="15:05:00">03:05 PM - 05:00 PM</option>
+                            </select>
+                            <div class="invalid-feedback small">Please select a preferred service time block.</div>
+                        </div>
+
+                        <!-- Reason / Troubleshooting Details -->
+                        <div class="col-12">
+                            <label for="reason" class="form-label text-dark small fw-semibold">Reason for Appointment / Repairs needed</label>
+                            <textarea class="form-control border-light-subtle" id="reason" name="reason" rows="3" placeholder="Explain the diagnostics needed (e.g., change engine oil & filter, brake pad noise, fork seal replacement, electrical diagnostics)..." required></textarea>
+                            <div class="invalid-feedback small">Please explain the reasons or symptoms.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer border-0 bg-light p-3 gap-2">
+                    <button type="button" class="btn btn-light rounded-pill fw-bold px-3 py-1.5 fs-7" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-dark rounded-pill fw-bold px-4 py-1.5 fs-7 shadow-sm">
+                        Submit Booking Slot
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Enforce scheduling date boundaries: Date cannot be set to a past date
+        const dateInput = document.getElementById('appointment_date');
+        if (dateInput) {
+            const today = new Date().toISOString().split('T')[0];
+            dateInput.setAttribute('min', today);
+        }
+
+        // Standard validation UI setup
+        var forms = document.querySelectorAll('.needs-validation');
+        Array.prototype.slice.call(forms).forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    });
+</script>
+{% endblock %}

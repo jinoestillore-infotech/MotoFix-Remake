@@ -24,6 +24,7 @@ def create_app():
     from app.routes.inventory_routes import inventory_bp
     from app.routes.cart_routes import cart_bp
     from app.routes.checkout_routes import checkout_bp
+    from app.routes.appointment_routes import appointment_bp
 
     # Register blueprints
     app.register_blueprint(auth_bp, url_prefix='/auth')
@@ -31,6 +32,7 @@ def create_app():
     app.register_blueprint(inventory_bp, url_prefix='/inventory')
     app.register_blueprint(cart_bp, url_prefix='/cart')
     app.register_blueprint(checkout_bp, url_prefix='/checkout')
+    app.register_blueprint(appointment_bp, url_prefix='/appointments')
     
     # Default index path logic fallback
     @app.route('/')
