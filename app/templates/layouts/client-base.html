@@ -66,6 +66,7 @@
             <a href="{{ url_for('checkout.list_orders') }}" class="{% if request.endpoint == 'checkout.list_orders' %}active{% endif %}">
                 <i class="fa-solid fa-box-open me-1"></i>
                 Orders
+                <span class="badge bg-danger rounded-pill ms-1 d-none" id="global-order-badge">0</span>
             </a>
             <a href="#">
                 <i class="fa-solid fa-calendar-check me-1"></i>

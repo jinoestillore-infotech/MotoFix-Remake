@@ -42,27 +42,30 @@ class Order:
 
     @staticmethod
     def find_by_user_id(user_id: int):
-        """Fetches all orders placed by a specific user, sorted from newest to oldest"""
-        query = """
-            SELECT * FROM orders 
-            WHERE user_id = %s 
-            ORDER BY created_at DESC
-        """
+        """Fetches all orders made by a specific customer, sorted newest to oldest"""
+        query = "SELECT * FROM orders WHERE user_id = %s ORDER BY id DESC"
         return Database.execute_query(query, (user_id,))
 
     @staticmethod
     def find_all_orders():
-        """Fetches all customer orders in the database for Owner review"""
+        """Fetches all customer transactions across all shop users for administrative dashboards"""
         query = """
-            SELECT o.*, u.email AS user_email, u.first_name AS user_first, u.last_name AS user_last
+            SELECT o.*, u.first_name AS user_first, u.last_name AS user_last, u.email AS user_email
             FROM orders o
             JOIN users u ON o.user_id = u.id
-            ORDER BY o.created_at DESC
+            ORDER BY o.id DESC
         """
         return Database.execute_query(query)
 
     @staticmethod
     def update_status(order_id: int, status: str):
-        """Updates the tracking status of a specific order"""
+        """Modifies status workflow state for client orders"""
         query = "UPDATE orders SET status = %s WHERE id = %s"
         return Database.execute_query(query, (status, order_id), commit=True)
+
+    @staticmethod
+    def get_active_count(user_id: int) -> int:
+        """Counts orders that are currently active (Pending or Processing) for dynamic badge notifications"""
+        query = "SELECT COUNT(*) as active_count FROM orders WHERE user_id = %s AND status IN ('Pending', 'Processing')"
+        result = Database.execute_query(query, (user_id,))
+        return result[0]['active_count'] if result else 0
