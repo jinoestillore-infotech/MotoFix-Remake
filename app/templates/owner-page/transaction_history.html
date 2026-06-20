@@ -1,0 +1,287 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}Paid Transactions History - MotoFix{% endblock %}
+
+{% block content %}
+{% set default_image = url_for('static', filename='uploads/parts/gear.jpg') %}
+
+<style>
+    .fs-7 { font-size: 0.875rem; }
+    .fs-8 { font-size: 0.8rem; }
+    .fs-9 { font-size: 0.735rem; }
+    .fw-extrabold { font-weight: 800; }
+    
+    #historyTable th {
+        background-color: #f8f9fa;
+        color: #495057;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+    }
+    .history-row-item:hover {
+        background-color: rgba(25, 135, 84, 0.03) !important;
+        transform: translateY(-0.5px);
+        box-shadow: inset 4px 0 0 #198754;
+    }
+</style>
+
+<div class="container-fluid py-4 px-md-4">
+    <!-- Breadcrumb Actions -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+        <a href="{{ url_for('dashboard.owner_orders') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+            <i class="fas fa-arrow-left me-1"></i> Back to Orders
+        </a>
+        <div class="text-muted small">
+            <i class="fa-solid fa-clock me-1"></i> Historical Ledger Mode
+        </div>
+    </div>
+
+    <!-- Live revenue reporting widget -->
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="card border-0 bg-success text-white shadow-sm rounded-4">
+                <div class="card-body p-4 d-flex align-items-center">
+                    <div class="p-3 bg-white bg-opacity-25 rounded-3 me-3">
+                        <i class="fa-solid fa-chart-line fa-2x"></i>
+                    </div>
+                    <div>
+                        <small class="text-white-50 text-uppercase tracking-wider fw-bold fs-9">Total Paid Revenue</small>
+                        <h2 class="mb-0 fw-extrabold tracking-tight font-monospace">₱{{ "{:,.2f}".format(total_profit) }}</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="card border border-light-subtle bg-white shadow-sm rounded-4">
+                <div class="card-body p-4 d-flex align-items-center">
+                    <div class="p-3 bg-success-subtle text-success rounded-3 me-3">
+                        <i class="fa-solid fa-file-invoice-dollar fa-2x"></i>
+                    </div>
+                    <div>
+                        <small class="text-muted text-uppercase tracking-wider fw-bold fs-9">Setted Transactions</small>
+                        <h2 class="mb-0 fw-bold text-dark font-monospace">{{ orders|length }} Invoice(s)</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header Block -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap mb-4 gap-3">
+        <div>
+            <h1 class="h3 mb-1 text-dark fw-extrabold tracking-tight">Paid Transaction History</h1>
+            <p class="text-muted fs-7 mb-0">Review completed transactions, monitor general shop metrics, and audit past client summaries.</p>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-6 col-xl-5">
+            <div class="input-group shadow-sm rounded-3 overflow-hidden">
+                <span class="input-group-text bg-white border-end-0 text-muted"><i class="fas fa-search"></i></span>
+                <input type="text" id="historySearch" class="form-control border-start-0 ps-1 py-2 fs-7 shadow-none" placeholder="Search by Invoice ID, Customer, or Phone...">
+            </div>
+        </div>
+    </div>
+
+    <!-- Table main log segment -->
+    <div class="card border border-light-subtle shadow-sm rounded-4 overflow-hidden mb-5 bg-white">
+        <div class="card-body p-0">
+            {% if orders %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" id="historyTable">
+                        <thead>
+                            <tr class="text-uppercase fw-bold text-muted border-bottom">
+                                <th class="ps-4 py-3 fw-bold">Ref No.</th>
+                                <th class="py-3 fw-bold">Customer Profile</th>
+                                <th class="py-3 fw-bold">Receipt Date</th>
+                                <th class="py-3 fw-bold text-center">Fulfillment</th>
+                                <th class="py-3 fw-bold text-center">Payment Method</th>
+                                <th class="py-3 text-end fw-bold">Amount Paid</th>
+                                <th class="pe-4 py-3 text-end fw-bold">Details</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in orders %}
+                                <tr class="history-row-item border-bottom border-light-subtle"
+                                    data-order-id="{{ order.id }}"
+                                    data-name="{{ order.full_name|lower }}"
+                                    data-phone="{{ order.phone }}">
+                                    <td class="ps-4 py-3.5">
+                                        <span class="font-monospace fw-bold text-success d-block">#0001-0626-{{ order.id }}</span>
+                                    </td>
+                                    <td class="py-3.5">
+                                        <div class="fw-bold text-dark fs-7">{{ order.full_name }}</div>
+                                        <div class="text-muted fs-8">{{ order.phone }}</div>
+                                    </td>
+                                    <td class="py-3.5 text-muted fs-8">
+                                        {{ order.created_at.strftime('%b %d, %Y - %I:%M %p') if order.created_at is not string else order.created_at }}
+                                    </td>
+                                    <td class="py-3.5 text-center text-capitalize small">
+                                        <span class="badge bg-light text-dark border rounded-pill py-1.5 px-3">
+                                            {{ order.fulfillment_method }}
+                                        </span>
+                                    </td>
+                                    <td class="py-3.5 text-center">
+                                        <span class="badge bg-dark text-white rounded-3 py-1.5 px-3 text-uppercase">
+                                            {{ order.payment_method }}
+                                        </span>
+                                    </td>
+                                    <td class="py-3.5 text-end fw-extrabold text-success font-monospace fs-7">
+                                        ₱{{ "{:,.2f}".format(order.total_amount) }}
+                                    </td>
+                                    <td class="pe-4 py-3.5 text-end">
+                                        <button class="btn btn-outline-dark btn-sm rounded-pill fw-bold px-3 fs-9" data-bs-toggle="modal" data-bs-target="#historyDetailsModal{{ order.id }}">
+                                            <i class="fa-solid fa-list-check me-1"></i> Review Bill
+                                        </button>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="noResultsPlaceholder" class="text-center py-5 d-none">
+                    <div class="text-muted mb-3 opacity-30">
+                        <i class="fa-solid fa-magnifying-glass fa-4x"></i>
+                    </div>
+                    <h5 class="fw-bold text-dark mb-1">No Transactions Found</h5>
+                    <p class="text-muted fs-8 mx-auto" style="max-width: 350px;">We couldn't find any paid transaction invoices matching those keywords.</p>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <div class="text-muted mb-3 opacity-30">
+                        <i class="fa-solid fa-receipt fa-4x"></i>
+                    </div>
+                    <h5 class="fw-bold text-dark mb-1">No Paid Transactions Yet</h5>
+                    <p class="text-muted fs-8 mx-auto" style="max-width: 350px;">Once active orders are flagged as "Completed" and marked "Paid" by the owner, they will register here immediately.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if orders %}
+    {% for order in orders %}
+        <!-- History Inspection Modal -->
+        <div class="modal fade" id="historyDetailsModal{{ order.id }}" tabindex="-1" aria-labelledby="historyLabel{{ order.id }}" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content border-0 rounded-4 shadow-lg text-dark overflow-hidden">
+                    <div class="modal-header bg-success text-white py-3 px-4 align-items-center border-0">
+                        <h5 class="modal-title fw-bold fs-5 tracking-tight" id="historyLabel{{ order.id }}">
+                            <i class="fa-solid fa-circle-check me-2"></i>Paid Transaction Receipt #0001-0626-{{ order.id }}
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-4 bg-white">
+                        <div class="row g-4 mb-4 pb-3 border-bottom border-light-subtle">
+                            <div class="col-6 col-md-3">
+                                <span class="text-muted d-block mb-1 text-uppercase fw-semibold small tracking-wider" style="font-size: 0.75rem;">Account User</span>
+                                <span class="fw-bold d-block text-dark">{{ order.user_first }} {{ order.user_last }}</span>
+                                <span class="text-muted small d-block" style="font-size: 0.8rem;">{{ order.user_email }}</span>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <span class="text-muted d-block mb-1 text-uppercase fw-semibold small tracking-wider" style="font-size: 0.75rem;">Recipient</span>
+                                <span class="fw-bold d-block text-dark">{{ order.full_name }}</span>
+                                <span class="text-muted small"><i class="fa-solid fa-phone me-1 opacity-70"></i>{{ order.phone }}</span>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <span class="text-muted d-block mb-1 text-uppercase fw-semibold small tracking-wider" style="font-size: 0.75rem;">Fulfillment</span>
+                                <div class="mt-1">
+                                    <span class="badge bg-light text-dark border text-uppercase py-1 px-2 fw-bold fs-9">
+                                        {{ order.fulfillment_method }}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <span class="text-muted d-block mb-1 text-uppercase fw-semibold small tracking-wider" style="font-size: 0.75rem;">Settlement Mode</span>
+                                <div class="mt-1">
+                                    <span class="badge bg-success text-white text-uppercase py-1 px-2 tracking-wider fw-bold fs-9">
+                                        {{ order.payment_method }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {% if order.notes %}
+                            <div class="bg-light border border-start-3 rounded-3 p-3 mb-4">
+                                <span class="text-secondary fw-bold d-block mb-1 small">Customer Notes:</span>
+                                <p class="mb-0 text-dark fst-italic small">"{{ order.notes }}"</p>
+                            </div>
+                        {% endif %}
+
+                        <h6 class="fw-bold text-uppercase tracking-wider text-muted border-bottom border-light-subtle pb-2 mb-3" style="font-size: 0.75rem;">
+                            Items Sold
+                        </h6>
+                        <div class="mb-4">
+                            {% for item in order.order_items %}
+                                <div class="d-flex justify-content-between align-items-center py-2 {% if not loop.last %}border-bottom border-light-subtle{% endif %}">
+                                    <div class="pe-3 min-w-0">
+                                        <span class="fw-bold text-dark d-block text-truncate" style="max-width: 320px;">{{ item.name }}</span>
+                                        <small class="text-muted d-block font-monospace mt-0.5" style="font-size: 0.8rem;">SKU: {{ item.sku }}</small>
+                                    </div>
+                                    <div class="text-end flex-shrink-0">
+                                        <span class="text-dark fw-bold d-block font-monospace">₱{{ "{:,.2f}".format(item.price * item.quantity) }}</span>
+                                        <small class="text-muted d-block mt-0.5" style="font-size: 0.8rem;">₱{{ "{:,.2f}".format(item.price) }} × {{ item.quantity }}</small>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center bg-success bg-opacity-10 p-3 rounded-3 border border-success border-opacity-25">
+                            <div>
+                                <span class="fw-bold text-success d-block">Settled Grand Total</span>
+                                <small class="text-muted d-block" style="font-size: 0.8rem;">Transaction completed and closed</small>
+                            </div>
+                            <span class="fs-3 fw-bold text-success tracking-tight font-monospace">
+                                ₱{{ "{:,.2f}".format(order.total_amount) }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+{% endif %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('historySearch');
+    const tableRows = document.querySelectorAll('.history-row-item');
+    const noResultsPlaceholder = document.getElementById('noResultsPlaceholder');
+    const tableHeader = document.querySelector('table');
+
+    function filterPaidTransactions() {
+        const query = searchInput.value.toLowerCase().trim();
+        let matches = 0;
+
+        tableRows.forEach(row => {
+            const orderId = row.getAttribute('data-order-id');
+            const customerName = row.getAttribute('data-name');
+            const phone = row.getAttribute('data-phone');
+
+            const matchesQuery = orderId.includes(query) || 
+                                 customerName.includes(query) || 
+                                 phone.includes(query);
+
+            if (matchesQuery) {
+                row.style.setProperty('display', '', 'important');
+                matches++;
+            } else {
+                row.style.setProperty('display', 'none', 'important');
+            }
+        });
+
+        if (matches === 0 && tableRows.length > 0) {
+            if (noResultsPlaceholder) noResultsPlaceholder.classList.remove('d-none');
+            if (tableHeader) tableHeader.classList.add('d-none');
+        } else {
+            if (noResultsPlaceholder) noResultsPlaceholder.classList.add('d-none');
+            if (tableHeader) tableHeader.classList.remove('d-none');
+        }
+    }
+
+    if (searchInput) {
+        searchInput.addEventListener('input', filterPaidTransactions);
+    }
+});
+</script>
+{% endblock %}

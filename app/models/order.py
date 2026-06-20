@@ -1,3 +1,4 @@
+# project/app/models/order.py
 from app.database import Database
 
 class Order:
@@ -48,11 +49,12 @@ class Order:
 
     @staticmethod
     def find_all_orders():
-        """Fetches all customer transactions across all shop users for administrative dashboards"""
+        """Fetches all customer transactions across all shop users for administrative dashboards (excluding Paid ones to keep active dashboard clean)"""
         query = """
             SELECT o.*, u.first_name AS user_first, u.last_name AS user_last, u.email AS user_email
             FROM orders o
             JOIN users u ON o.user_id = u.id
+            WHERE o.is_paid = 0
             ORDER BY o.id DESC
         """
         return Database.execute_query(query)
@@ -69,3 +71,21 @@ class Order:
         query = "SELECT COUNT(*) as active_count FROM orders WHERE user_id = %s AND status IN ('Pending', 'Processing')"
         result = Database.execute_query(query, (user_id,))
         return result[0]['active_count'] if result else 0
+
+    @staticmethod
+    def mark_as_paid(order_id: int):
+        """Flags an order as permanently paid"""
+        query = "UPDATE orders SET is_paid = 1 WHERE id = %s"
+        return Database.execute_query(query, (order_id,), commit=True)
+
+    @staticmethod
+    def find_paid_transactions():
+        """Fetches historical sales transactions which are flagged as is_paid = 1"""
+        query = """
+            SELECT o.*, u.first_name AS user_first, u.last_name AS user_last, u.email AS user_email
+            FROM orders o
+            JOIN users u ON o.user_id = u.id
+            WHERE o.is_paid = 1
+            ORDER BY o.id DESC
+        """
+        return Database.execute_query(query)
