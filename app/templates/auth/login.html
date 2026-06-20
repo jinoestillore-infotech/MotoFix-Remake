@@ -17,6 +17,7 @@
                 </div>
 
                 <form action="{{ url_for('auth.login_post') }}" method="POST" class="needs-validation" novalidate>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="mb-3">
                         <label for="email" class="form-label text-dark small fw-semibold">Email Address</label>
                         <div class="input-group">

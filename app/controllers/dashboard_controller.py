@@ -1,7 +1,19 @@
+# project/app/controllers/dashboard_controller.py
+import os
 from flask import render_template, request, session, redirect, url_for, flash
+from werkzeug.utils import secure_filename
+from app.database import Database
 from app.models.user import User
 from app.models.part import Part
 from app.models.order import Order
+from app.models.payment_setting import PaymentSetting
+
+# Configuration guidelines for valid payment QR uploads
+ALLOWED_PAYMENT_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp', 'gif'}
+
+def allowed_file(filename):
+    """Checks if the uploaded file has a valid image extension"""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_PAYMENT_EXTENSIONS
 
 class DashboardController:
     """Controller navigating business matrices, appointment logs, and order status cycles"""
@@ -11,23 +23,27 @@ class DashboardController:
         """Aggregates active analytics for stats grid blocks"""
         total_clients_query = "SELECT COUNT(*) as count FROM users WHERE role_id = 3"
         total_mechanics_query = "SELECT COUNT(*) as count FROM users WHERE role_id = 2"
-        total_appointments_query = "SELECT COUNT(*) as count FROM orders WHERE status = 'Pending'" # Placeholder for appointment count
+        pending_orders_query = "SELECT COUNT(*) as count FROM orders WHERE status = 'Pending'"
 
         try:
-            total_clients = User.Database.execute_query(total_clients_query)[0]['count']
-            total_mechanics = User.Database.execute_query(total_mechanics_query)[0]['count']
-            total_appointments = User.Database.execute_query(total_appointments_query)[0]['count']
+            # Resolved User.Database error by executing queries via direct Database class
+            total_clients = Database.execute_query(total_clients_query)[0]['count']
+            total_mechanics = Database.execute_query(total_mechanics_query)[0]['count']
+            pending_orders = Database.execute_query(pending_orders_query)[0]['count']
             low_stock = Part.get_low_stock_count()
-        except Exception:
+        except Exception as e:
+            # Standard error logging to console
+            print(f"Error loading dashboard metrics: {str(e)}")
             total_clients = 0
             total_mechanics = 0
-            total_appointments = 0
+            pending_orders = 0
             low_stock = 0
 
+        # Aligned keys with the 'dashboard.html' requirements ('pending_orders')
         stats = {
             'total_clients': total_clients,
             'total_mechanics': total_mechanics,
-            'total_appointments': total_appointments,
+            'pending_orders': pending_orders,
             'low_stock_parts': low_stock
         }
         return render_template('owner-page/dashboard.html', stats=stats)
@@ -59,7 +75,7 @@ class DashboardController:
         status = request.form.get('status')
         if status:
             Order.update_status(order_id, status)
-            flash(f"Order status successfully updated to '{status}'!", "success")
+            flash(f"Order #{order_id} status successfully updated to '{status}'!", "success")
         else:
             flash("Invalid status selected.", "danger")
         return redirect(url_for('dashboard.owner_orders'))
@@ -77,7 +93,7 @@ class DashboardController:
             return redirect(url_for('dashboard.owner_orders'))
 
         Order.mark_as_paid(order_id)
-        flash(f"Order has been fully settled and moved to transaction history!", "success")
+        flash(f"Order #{order_id} has been fully settled and moved to transaction history!", "success")
         return redirect(url_for('dashboard.owner_orders'))
 
     @staticmethod
@@ -98,3 +114,40 @@ class DashboardController:
             orders=orders_list, 
             total_profit=total_profit
         )
+
+    @staticmethod
+    def view_payment_settings():
+        """Loads payment credentials manager dashboard"""
+        settings = PaymentSetting.get()
+        return render_template('owner-page/payment_settings.html', settings=settings)
+
+    @staticmethod
+    def update_payment_settings():
+        """Processes edits to the GCash details and secures uploaded QR code picture files"""
+        gcash_name = request.form.get('gcash_name', '').strip()
+        gcash_phone = request.form.get('gcash_phone', '').strip()
+
+        if not gcash_name or not gcash_phone:
+            flash("GCash Name and Phone Number are required fields.", "danger")
+            return redirect(url_for('dashboard.payment_settings'))
+
+        image_filename = None
+        if 'gcash_qr' in request.files:
+            file = request.files['gcash_qr']
+            if file and file.filename != '' and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                upload_folder = os.path.join('app', 'static', 'uploads', 'payments')
+                os.makedirs(upload_folder, exist_ok=True)
+                
+                # Prefix filename with unique key
+                unique_filename = f"gcash_qr_{filename}"
+                file.save(os.path.join(upload_folder, unique_filename))
+                image_filename = unique_filename
+
+        try:
+            PaymentSetting.update(gcash_name, gcash_phone, image_filename)
+            flash("Payment method configuration updated successfully!", "success")
+        except Exception as e:
+            flash(f"Update failed: {str(e)}", "danger")
+            
+        return redirect(url_for('dashboard.payment_settings'))

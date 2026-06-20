@@ -1,3 +1,4 @@
+<!-- project/app/templates/client-page/checkout.html -->
 {% extends 'layouts/client-base.html' %}
 
 {% block title %}Checkout - MotoShop{% endblock %}
@@ -29,6 +30,7 @@
     <h2 class="fw-bold text-dark mb-4">Checkout Payment</h2>
 
     <form action="{{ url_for('checkout.place') }}" method="POST" class="needs-validation" novalidate id="checkoutForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         {% if is_direct_buy %}
             <input type="hidden" name="buy_now_id" id="directPartId" value="{{ direct_part_id }}">
             <input type="hidden" name="buy_now_qty" id="directQtyInput" value="{{ direct_qty }}">
@@ -131,11 +133,22 @@
                                     <div class="tab-pane fade" id="panel-gcash" role="tabpanel">
                                         <div class="p-3 border rounded-3 bg-light text-center">
                                             <h6 class="fw-bold text-dark text-start mb-2"><i class="fa-solid fa-qrcode text-primary me-1"></i>Digital QR Payment</h6>
-                                            <div class="my-3 mx-auto border p-3 rounded-4 bg-white shadow-sm" style="max-width: 140px; aspect-ratio: 1/1;">
-                                                <i class="fa-solid fa-qrcode fa-5x text-dark"></i>
+                                            
+                                            <!-- Dynamic QR Image Wrapper -->
+                                            <div class="my-3 mx-auto border p-3 rounded-4 bg-white shadow-sm d-flex align-items-center justify-content-center" style="max-width: 180px; aspect-ratio: 1/1; overflow: hidden;">
+                                                {% if payment_settings and payment_settings.gcash_qr_filename %}
+                                                    <img src="{{ url_for('static', filename='uploads/payments/' ~ payment_settings.gcash_qr_filename) }}" alt="GCash Billing QR" class="img-fluid" style="object-fit: contain; width: 100%; height: 100%;">
+                                                {% else %}
+                                                    <div class="text-center text-muted">
+                                                        <i class="fa-solid fa-qrcode fa-5x text-dark opacity-25"></i>
+                                                        <small class="d-block font-monospace fs-9 mt-1">No custom QR uploaded.</small>
+                                                    </div>
+                                                {% endif %}
                                             </div>
-                                            <p class="text-dark small fw-bold mb-1">GCash Account: MotoShop Parts Admin</p>
-                                            <p class="text-dark small font-monospace mb-2">Number: 0917-888-2918</p>
+                                            
+                                            <!-- Dynamic text fields -->
+                                            <p class="text-dark small fw-bold mb-1">GCash Account: {{ payment_settings.gcash_name if payment_settings else 'MotoShop Parts Admin' }}</p>
+                                            <p class="text-dark small font-monospace mb-2">Number: {{ payment_settings.gcash_phone if payment_settings else '0917-888-2918' }}</p>
                                             <small class="text-primary d-block fs-9">Send exactly your order total, copy the transaction Ref ID, or write it inside your order note below for confirmation.</small>
                                         </div>
                                     </div>

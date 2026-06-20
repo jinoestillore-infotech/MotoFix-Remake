@@ -1,14 +1,22 @@
+# project/app/__init__.py
 from flask import Flask
+from flask_wtf.csrf import CSRFProtect
 from app.config import Config
 from app.database import Database
 
+# Initialize CSRF protection globally
+csrf = CSRFProtect()
+
 def create_app():
-    """Application factory for the Flask app"""
+    """Application factory for the Flask app with CSRF security enabled"""
     app = Flask(__name__)
     app.config.from_object(Config)
 
     # Initialize connection pool
     Database.initialize()
+
+    # Initialize CSRF protection on the app instance
+    csrf.init_app(app)
 
     # Import blueprints inside factory to prevent circular imports
     from app.routes.auth_routes import auth_bp

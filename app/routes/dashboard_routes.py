@@ -1,4 +1,3 @@
-# project/app/routes/dashboard_routes.py
 from flask import Blueprint
 from app.controllers.dashboard_controller import DashboardController
 from app.classes.Authentication import Authentication
@@ -46,3 +45,15 @@ def mark_order_as_paid(order_id):
 def transaction_history():
     """Renders archived log sheet of fully completed and paid transactions"""
     return DashboardController.view_transaction_history()
+
+@dashboard_bp.route('/owner/payment-settings', methods=['GET'])
+@Authentication.role_required('Owner')
+def payment_settings():
+    """Renders interface to update owner GCash billing details"""
+    return DashboardController.view_payment_settings()
+
+@dashboard_bp.route('/owner/payment-settings/update', methods=['POST'])
+@Authentication.role_required('Owner')
+def update_payment_settings():
+    """Handles post request saving owner payment details"""
+    return DashboardController.update_payment_settings()

@@ -249,6 +249,7 @@
                         <div class="d-flex justify-content-center gap-2">
                             <button type="button" class="btn btn-light rounded-pill fw-semibold px-3 fs-9" data-bs-dismiss="modal">Cancel</button>
                             <form action="{{ url_for('dashboard.mark_order_as_paid', order_id=order.id) }}" method="POST" class="m-0">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <button type="submit" class="btn btn-success rounded-pill fw-bold px-3 fs-9">Yes, Mark as Paid</button>
                             </form>
                         </div>
@@ -370,6 +371,7 @@
                             Update Status
                         </h6>
                         <form action="{{ url_for('dashboard.update_order_status', order_id=order.id) }}" method="POST" class="m-0">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <div class="row align-items-center g-3">
                                 <div class="col-12 col-sm-8">
                                     <select class="form-select border-light-subtle py-2 shadow-none rounded-3" name="status" required>

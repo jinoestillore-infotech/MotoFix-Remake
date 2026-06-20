@@ -2,6 +2,7 @@ from flask import render_template, request, session, redirect, url_for, flash, j
 from app.models.cart import Cart
 from app.models.part import Part
 from app.models.order import Order
+from app.models.payment_setting import PaymentSetting  # Import Setting
 from app.services.checkout_service import CheckoutService
 
 class CheckoutController:
@@ -9,7 +10,7 @@ class CheckoutController:
 
     @staticmethod
     def show_checkout_page():
-        """Renders payment details page sorting Direct Buy vs Cart items"""
+        """Renders payment details page sorting Direct Buy vs Cart items with dynamic billing configurations"""
         user_id = session.get('user_id')
         buy_now_id = request.args.get('buy_now_id')
         buy_now_qty = request.args.get('buy_now_qty', 1, type=int)
@@ -64,6 +65,9 @@ class CheckoutController:
             'phone': session.get('phone', '')
         }
 
+        # Retrieve active billing credentials dynamically from the database
+        active_payment_settings = PaymentSetting.get()
+
         return render_template(
             'client-page/checkout.html',
             items=items_to_review,
@@ -71,7 +75,8 @@ class CheckoutController:
             customer=customer_details,
             is_direct_buy=is_direct_buy,
             direct_part_id=direct_part_id,
-            direct_qty=buy_now_qty
+            direct_qty=buy_now_qty,
+            payment_settings=active_payment_settings  # Injected settings variables!
         )
 
     @staticmethod
@@ -132,7 +137,6 @@ class CheckoutController:
         orders_list = []
         
         for order in orders:
-            # FILTER: Exclude paid history records from this tracking page
             if order.get('is_paid') == 1:
                 continue
                 
@@ -152,7 +156,6 @@ class CheckoutController:
         total_spent = 0.0
         
         for order in orders:
-            # FILTER: Include ONLY paid history records in this archive page
             if order.get('is_paid') == 1:
                 order_dict = dict(order)
                 items = Order.get_order_items(order['id'])
