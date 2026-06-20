@@ -9,7 +9,6 @@
     .fs-7 { font-size: 0.875rem; }
     .fs-8 { font-size: 0.8rem; }
     .fs-9 { font-size: 0.735rem; }
-    .fw-extrabold { font-weight: 800; }
     
     #historyTable th {
         background-color: #f8f9fa;
@@ -17,9 +16,11 @@
         font-size: 0.75rem;
         letter-spacing: 0.05em;
     }
+    .history-row-item {
+        transition: background-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
     .history-row-item:hover {
         background-color: rgba(25, 135, 84, 0.03) !important;
-        transform: translateY(-0.5px);
         box-shadow: inset 4px 0 0 #198754;
     }
 </style>
@@ -27,7 +28,7 @@
 <div class="container-fluid py-4 px-md-4">
     <!-- Breadcrumb Actions -->
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
-        <a href="{{ url_for('dashboard.owner_orders') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+        <a href="{{ url_for('dashboard.owner_orders') }}" class="btn btn-sm fw-semibold rounded-pill px-3">
             <i class="fas fa-arrow-left me-1"></i> Back to Orders
         </a>
         <div class="text-muted small">
@@ -45,7 +46,7 @@
                     </div>
                     <div>
                         <small class="text-white-50 text-uppercase tracking-wider fw-bold fs-9">Total Paid Revenue</small>
-                        <h2 class="mb-0 fw-extrabold tracking-tight font-monospace">₱{{ "{:,.2f}".format(total_profit) }}</h2>
+                        <h2 class="mb-0 fw-bold tracking-tight font-monospace">₱{{ "{:,.2f}".format(total_profit) }}</h2>
                     </div>
                 </div>
             </div>
@@ -57,7 +58,7 @@
                         <i class="fa-solid fa-file-invoice-dollar fa-2x"></i>
                     </div>
                     <div>
-                        <small class="text-muted text-uppercase tracking-wider fw-bold fs-9">Setted Transactions</small>
+                        <small class="text-muted text-uppercase tracking-wider fw-bold fs-9">Settled Transactions</small>
                         <h2 class="mb-0 fw-bold text-dark font-monospace">{{ orders|length }} Invoice(s)</h2>
                     </div>
                 </div>
@@ -68,7 +69,7 @@
     <!-- Header Block -->
     <div class="d-flex justify-content-between align-items-center flex-wrap mb-4 gap-3">
         <div>
-            <h1 class="h3 mb-1 text-dark fw-extrabold tracking-tight">Paid Transaction History</h1>
+            <h1 class="h3 mb-1 text-dark fw-bold tracking-tight">Paid Transaction History</h1>
             <p class="text-muted fs-7 mb-0">Review completed transactions, monitor general shop metrics, and audit past client summaries.</p>
         </div>
     </div>
@@ -89,7 +90,7 @@
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0" id="historyTable">
                         <thead>
-                            <tr class="text-uppercase fw-bold text-muted border-bottom">
+                            <tr class="text-uppercase fw-bold text-muted border-bottom bg-light">
                                 <th class="ps-4 py-3 fw-bold">Ref No.</th>
                                 <th class="py-3 fw-bold">Customer Profile</th>
                                 <th class="py-3 fw-bold">Receipt Date</th>
@@ -105,30 +106,30 @@
                                     data-order-id="{{ order.id }}"
                                     data-name="{{ order.full_name|lower }}"
                                     data-phone="{{ order.phone }}">
-                                    <td class="ps-4 py-3.5">
+                                    <td class="ps-4 py-3">
                                         <span class="font-monospace fw-bold text-success d-block">#0001-0626-{{ order.id }}</span>
                                     </td>
-                                    <td class="py-3.5">
+                                    <td class="py-3">
                                         <div class="fw-bold text-dark fs-7">{{ order.full_name }}</div>
                                         <div class="text-muted fs-8">{{ order.phone }}</div>
                                     </td>
-                                    <td class="py-3.5 text-muted fs-8">
+                                    <td class="py-3 text-muted fs-8">
                                         {{ order.created_at.strftime('%b %d, %Y - %I:%M %p') if order.created_at is not string else order.created_at }}
                                     </td>
-                                    <td class="py-3.5 text-center text-capitalize small">
-                                        <span class="badge bg-light text-dark border rounded-pill py-1.5 px-3">
+                                    <td class="py-3 text-center text-capitalize small">
+                                        <span class="badge bg-light text-dark border rounded-pill py-2 px-3">
                                             {{ order.fulfillment_method }}
                                         </span>
                                     </td>
-                                    <td class="py-3.5 text-center">
-                                        <span class="badge bg-dark text-white rounded-3 py-1.5 px-3 text-uppercase">
+                                    <td class="py-3 text-center">
+                                        <span class="badge bg-dark text-white rounded-3 py-2 px-3 text-uppercase">
                                             {{ order.payment_method }}
                                         </span>
                                     </td>
-                                    <td class="py-3.5 text-end fw-extrabold text-success font-monospace fs-7">
+                                    <td class="py-3 text-end fw-bold text-success font-monospace fs-7">
                                         ₱{{ "{:,.2f}".format(order.total_amount) }}
                                     </td>
-                                    <td class="pe-4 py-3.5 text-end">
+                                    <td class="pe-4 py-3 text-end">
                                         <button class="btn btn-outline-dark btn-sm rounded-pill fw-bold px-3 fs-9" data-bs-toggle="modal" data-bs-target="#historyDetailsModal{{ order.id }}">
                                             <i class="fa-solid fa-list-check me-1"></i> Review Bill
                                         </button>
@@ -140,7 +141,7 @@
                 </div>
 
                 <div id="noResultsPlaceholder" class="text-center py-5 d-none">
-                    <div class="text-muted mb-3 opacity-30">
+                    <div class="text-muted mb-3 opacity-25">
                         <i class="fa-solid fa-magnifying-glass fa-4x"></i>
                     </div>
                     <h5 class="fw-bold text-dark mb-1">No Transactions Found</h5>
@@ -148,7 +149,7 @@
                 </div>
             {% else %}
                 <div class="text-center py-5">
-                    <div class="text-muted mb-3 opacity-30">
+                    <div class="text-muted mb-3 opacity-25">
                         <i class="fa-solid fa-receipt fa-4x"></i>
                     </div>
                     <h5 class="fw-bold text-dark mb-1">No Paid Transactions Yet</h5>
@@ -202,7 +203,7 @@
                         </div>
 
                         {% if order.notes %}
-                            <div class="bg-light border border-start-3 rounded-3 p-3 mb-4">
+                            <div class="bg-light border-start border-secondary border-3 rounded-end-3 p-3 mb-4">
                                 <span class="text-secondary fw-bold d-block mb-1 small">Customer Notes:</span>
                                 <p class="mb-0 text-dark fst-italic small">"{{ order.notes }}"</p>
                             </div>

@@ -77,7 +77,9 @@
                             </div>
                             <div class="flex-shrink-0">
                                 <span class="badge rounded-pill text-uppercase fs-9 py-1.5 px-2.5 fw-bold tracking-wider
-                                    {% if order.status|lower == 'pending' %}
+                                    {% if order.is_paid == 1 %}
+                                        bg-success text-white border border-success
+                                    {% elif order.status|lower == 'pending' %}
                                         bg-warning-subtle text-warning border border-warning-subtle
                                     {% elif order.status|lower == 'processing' %}
                                         bg-primary-subtle text-primary border border-primary-subtle
@@ -86,7 +88,11 @@
                                     {% else %}
                                         bg-danger-subtle text-danger border border-danger-subtle
                                     {% endif %}">
-                                    {{ order.status }}
+                                    {% if order.is_paid == 1 %}
+                                        <i class="fa-solid fa-circle-check me-1"></i> Paid & Settled
+                                    {% else %}
+                                        {{ order.status }}
+                                    {% endif %}
                                 </span>
                             </div>
                         </div>
