@@ -1,5 +1,4 @@
-# project/app/controllers/checkout_controller.py
-from flask import render_template, request, session, redirect, url_for, flash
+from flask import render_template, request, session, redirect, url_for, flash, jsonify
 from app.models.cart import Cart
 from app.models.part import Part
 from app.models.order import Order
@@ -134,10 +133,17 @@ class CheckoutController:
         
         for order in orders:
             order_dict = dict(order)
-            # Retrieve joined parts matching order items
             items = Order.get_order_items(order['id'])
-            # RENAMED from 'items' to 'order_items' to completely prevent python dictionary/Jinja standard method conflicts!
             order_dict['order_items'] = items
             orders_list.append(order_dict)
             
         return render_template('client-page/orders.html', orders=orders_list)
+
+    @staticmethod
+    def get_order_count_api():
+        """GET JSON API returning live count of active/pending orders for a client"""
+        user_id = session.get('user_id')
+        if not user_id:
+            return jsonify({"order_count": 0})
+        count = Order.get_active_count(user_id)
+        return jsonify({"order_count": count})

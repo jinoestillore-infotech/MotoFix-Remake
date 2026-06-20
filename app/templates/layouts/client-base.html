@@ -128,7 +128,8 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const badge = document.getElementById('global-cart-badge');
+    const cartBadge = document.getElementById('global-cart-badge');
+    const orderBadge = document.getElementById('global-order-badge');
     const toastEl = document.getElementById('cartToast');
     const toastMessage = document.getElementById('toast-message');
     const toastIcon = document.getElementById('toast-icon');
@@ -166,20 +167,38 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch('/cart/count')
             .then(res => res.json())
             .then(data => {
-                if (badge) {
+                if (cartBadge) {
                     if (data.cart_count > 0) {
-                        badge.textContent = data.cart_count;
-                        badge.classList.remove('d-none');
+                        cartBadge.textContent = data.cart_count;
+                        cartBadge.classList.remove('d-none');
                     } else {
-                        badge.classList.add('d-none');
+                        cartBadge.classList.add('d-none');
                     }
                 }
             })
             .catch(err => console.error("Error updating cart counts:", err));
     };
 
+    // Function to load active orders count live (Pending + Processing)
+    window.refreshOrderBadge = function() {
+        fetch('/checkout/order-count')
+            .then(res => res.json())
+            .then(data => {
+                if (orderBadge) {
+                    if (data.order_count > 0) {
+                        orderBadge.textContent = data.order_count;
+                        orderBadge.classList.remove('d-none');
+                    } else {
+                        orderBadge.classList.add('d-none');
+                    }
+                }
+            })
+            .catch(err => console.error("Error updating order counts:", err));
+    };
+
     // Initial count update
     refreshCartBadge();
+    refreshOrderBadge();
 });
 
 // Auto-dismiss the mobile sliding helper hint banner
