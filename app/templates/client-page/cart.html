@@ -235,10 +235,14 @@
             return;
         }
 
+        const csrfToken = document
+        .querySelector('meta[name="csrf-token"]')
+        .getAttribute('content');
+
         // Send AJAX request to server
         fetch('/cart/update', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
             body: JSON.stringify({ item_id: itemId, quantity: newQty })
         })
         .then(res => res.json())
@@ -264,9 +268,13 @@
             deleteModalInstance.hide();
         }
 
+        const csrfToken = document
+        .querySelector('meta[name="csrf-token"]')
+        .getAttribute('content');
+
         fetch('/cart/remove', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
             body: JSON.stringify({ item_id: itemId })
         })
         .then(res => res.json())

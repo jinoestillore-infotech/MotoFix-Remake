@@ -228,7 +228,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let activeCategory = 'all';
     
     // Storefront Pagination settings (8 products fits e-commerce grids nicely)
-    const itemsPerPage = 10;
+    const itemsPerPage = 20;
     let currentPage = 1;
 
     function bindAddToCartEvents() {
@@ -242,7 +242,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 e.preventDefault();
                 const partId = this.getAttribute('data-part-id');
                 const partName = this.getAttribute('data-part-name');
-                
+                const csrfToken = document
+                .querySelector('meta[name="csrf-token"]')
+                .getAttribute('content');
+
                 // Disable button temporarily to prevent double submission
                 this.disabled = true;
                 this.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Adding...`;
@@ -250,7 +253,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 fetch('/cart/add', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
                     },
                     body: JSON.stringify({ part_id: partId, quantity: 1 })
                 })

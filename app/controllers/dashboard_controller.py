@@ -75,7 +75,7 @@ class DashboardController:
         status = request.form.get('status')
         if status:
             Order.update_status(order_id, status)
-            flash(f"Order #{order_id} status successfully updated to '{status}'!", "success")
+            flash(f"Order status successfully updated to '{status}'!", "success")
         else:
             flash("Invalid status selected.", "danger")
         return redirect(url_for('dashboard.owner_orders'))
@@ -93,7 +93,7 @@ class DashboardController:
             return redirect(url_for('dashboard.owner_orders'))
 
         Order.mark_as_paid(order_id)
-        flash(f"Order #{order_id} has been fully settled and moved to transaction history!", "success")
+        flash(f"Order has been fully settled and moved to transaction history!", "success")
         return redirect(url_for('dashboard.owner_orders'))
 
     @staticmethod

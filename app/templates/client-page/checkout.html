@@ -312,6 +312,10 @@
         let currentQty = parseInt(qtyInput.value);
         let dynamicQty = currentQty + delta;
 
+        const csrfToken = document
+        .querySelector('meta[name="csrf-token"]')
+        .getAttribute('content');
+
         if (dynamicQty < 1) {
             if(window.showSystemToast) {
                 window.showSystemToast("Quantity cannot be lower than 1 item.", false);
@@ -343,7 +347,7 @@
         } else {
             fetch('/cart/update', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
                 body: JSON.stringify({ item_id: itemId, quantity: dynamicQty })
             })
             .then(res => res.json())

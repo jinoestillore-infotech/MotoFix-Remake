@@ -7,6 +7,8 @@
     .fs-7 { font-size: 0.875rem; }
     .fs-9 { font-size: 0.75rem; }
     .fw-extrabold { font-weight: 800; }
+    
+    /* Clean CSS Multi-line text clamping */
     .text-truncate-2 {
         display: -webkit-box;
         -webkit-line-clamp: 2;
@@ -49,7 +51,7 @@
     /* Print-only CSS layout adjustments */
     @media print {
         .btn, .order-status-step, .status-badge-icon { display: none !important; }
-        .card { border: none !important; shadow: none !important; }
+        .card { border: none !important; box-shadow: none !important; }
     }
 </style>
 
@@ -140,9 +142,12 @@
                         {% if order.fulfillment_method == 'delivery' %}
                         <div class="col-12 mt-2 pt-2 border-top border-light-subtle">
                             <span class="text-muted d-block mb-0.5 fs-9">Complete Delivery Address</span>
-                            <span class="fw-bold text-dark d-block text-truncate-2 bg-light p-2 rounded-3 fs-7" title="{{ order.address }}">
-                                {{ order.address }}
-                            </span>
+                            <!-- FIX: Separate structural container styles from text clamping -->
+                            <div class="bg-light p-2 rounded-3" title="{{ order.address }}">
+                                <span class="fw-bold text-dark d-block text-truncate-2 fs-7">
+                                    {{ order.address }}
+                                </span>
+                            </div>
                         </div>
                         {% endif %}
                     </div>
