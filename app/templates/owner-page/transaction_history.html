@@ -23,6 +23,12 @@
         background-color: rgba(25, 135, 84, 0.03) !important;
         box-shadow: inset 4px 0 0 #198754;
     }
+    /* Scrollable custom table wrapper */
+    .table-responsive-scroll {
+        max-height: 480px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+    }
 </style>
 
 <div class="container-fluid py-4 px-md-4">
@@ -59,7 +65,7 @@
                     </div>
                     <div>
                         <small class="text-muted text-uppercase tracking-wider fw-bold fs-9">Settled Transactions</small>
-                        <h2 class="mb-0 fw-bold text-dark font-monospace">{{ orders|length }} Invoice(s)</h2>
+                        <h2 class="mb-0 fw-bold text-dark font-monospace" id="headerInvoicesCount">{{ orders|length }} Invoice(s)</h2>
                     </div>
                 </div>
             </div>
@@ -87,10 +93,10 @@
     <div class="card border border-light-subtle shadow-sm rounded-4 overflow-hidden mb-5 bg-white">
         <div class="card-body p-0">
             {% if orders %}
-                <div class="table-responsive">
+                <div class="table-responsive table-responsive-scroll">
                     <table class="table table-hover align-middle mb-0" id="historyTable">
                         <thead>
-                            <tr class="text-uppercase fw-bold text-muted border-bottom bg-light">
+                            <tr class="text-uppercase fw-bold text-muted border-bottom bg-light sticky-top">
                                 <th class="ps-4 py-3 fw-bold">Ref No.</th>
                                 <th class="py-3 fw-bold">Customer Profile</th>
                                 <th class="py-3 fw-bold">Receipt Date</th>
@@ -146,6 +152,18 @@
                     </div>
                     <h5 class="fw-bold text-dark mb-1">No Transactions Found</h5>
                     <p class="text-muted fs-8 mx-auto" style="max-width: 350px;">We couldn't find any paid transaction invoices matching those keywords.</p>
+                </div>
+
+                <!-- Client-side Pagination Footer -->
+                <div class="card-footer bg-white border-top border-light-subtle py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div class="text-muted small">
+                        Showing <span id="startIndex" class="fw-bold text-dark">0</span> to <span id="endIndex" class="fw-bold text-dark">0</span> of <span id="totalEntries" class="fw-bold text-dark">0</span> entries
+                    </div>
+                    <nav aria-label="Transaction Page Navigation">
+                        <ul class="pagination pagination-sm mb-0" id="paginationControls">
+                            <!-- Controls dynamically injected here -->
+                        </ul>
+                    </nav>
                 </div>
             {% else %}
                 <div class="text-center py-5">
@@ -249,11 +267,19 @@ document.addEventListener('DOMContentLoaded', function() {
     const tableRows = document.querySelectorAll('.history-row-item');
     const noResultsPlaceholder = document.getElementById('noResultsPlaceholder');
     const tableHeader = document.querySelector('table');
+    const tableResponsive = document.querySelector('.table-responsive');
+    const cardFooter = document.querySelector('.card-footer');
 
-    function filterPaidTransactions() {
+    // Pagination Settings
+    const rowsPerPage = 10;
+    let currentPage = 1;
+    let filteredRows = [];
+
+    function filterAndPaginatePaidTransactions() {
         const query = searchInput.value.toLowerCase().trim();
-        let matches = 0;
+        filteredRows = [];
 
+        // 1. Filtering
         tableRows.forEach(row => {
             const orderId = row.getAttribute('data-order-id');
             const customerName = row.getAttribute('data-name');
@@ -264,25 +290,128 @@ document.addEventListener('DOMContentLoaded', function() {
                                  phone.includes(query);
 
             if (matchesQuery) {
-                row.style.setProperty('display', '', 'important');
-                matches++;
+                filteredRows.push(row);
             } else {
                 row.style.setProperty('display', 'none', 'important');
             }
         });
 
-        if (matches === 0 && tableRows.length > 0) {
+        const totalEntries = filteredRows.length;
+
+        // Display check
+        if (totalEntries === 0) {
             if (noResultsPlaceholder) noResultsPlaceholder.classList.remove('d-none');
             if (tableHeader) tableHeader.classList.add('d-none');
+            if (tableResponsive) tableResponsive.classList.add('d-none');
+            if (cardFooter) cardFooter.classList.add('d-none');
+            return;
         } else {
             if (noResultsPlaceholder) noResultsPlaceholder.classList.add('d-none');
             if (tableHeader) tableHeader.classList.remove('d-none');
+            if (tableResponsive) tableResponsive.classList.remove('d-none');
+            if (cardFooter) cardFooter.classList.remove('d-none');
         }
+
+        const totalPages = Math.ceil(totalEntries / rowsPerPage) || 1;
+
+        // Clamp Current Page
+        if (currentPage > totalPages) currentPage = totalPages;
+        if (currentPage < 1) currentPage = 1;
+
+        const startIdx = (currentPage - 1) * rowsPerPage;
+        const endIdx = startIdx + rowsPerPage;
+
+        // 2. Hide all rows initially
+        tableRows.forEach(row => {
+            row.style.setProperty('display', 'none', 'important');
+        });
+
+        // 3. Show slice
+        filteredRows.forEach((row, index) => {
+            if (index >= startIdx && index < endIdx) {
+                row.style.setProperty('display', '', 'important');
+            }
+        });
+
+        // Update Statistics
+        const displayStart = totalEntries === 0 ? 0 : startIdx + 1;
+        const displayEnd = Math.min(endIdx, totalEntries);
+
+        const startIndexEl = document.getElementById('startIndex');
+        const endIndexEl = document.getElementById('endIndex');
+        const totalEntriesEl = document.getElementById('totalEntries');
+
+        if (startIndexEl) startIndexEl.textContent = displayStart;
+        if (endIndexEl) endIndexEl.textContent = displayEnd;
+        if (totalEntriesEl) totalEntriesEl.textContent = totalEntries;
+
+        renderPaginationControls(totalPages);
+    }
+
+    function renderPaginationControls(totalPages) {
+        const controlsContainer = document.getElementById('paginationControls');
+        if (!controlsContainer) return;
+
+        controlsContainer.innerHTML = '';
+
+        if (totalPages <= 1) {
+            return;
+        }
+
+        // Previous Button Link
+        const prevLi = document.createElement('li');
+        prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+        prevLi.innerHTML = `<a class="page-link border-light-subtle rounded-start-pill px-3 text-dark shadow-none" href="#" aria-label="Previous">&laquo;</a>`;
+        if (currentPage !== 1) {
+            prevLi.addEventListener('click', function(e) {
+                e.preventDefault();
+                currentPage--;
+                filterAndPaginatePaidTransactions();
+            });
+        }
+        controlsContainer.appendChild(prevLi);
+
+        // Page Numbers Links
+        for (let i = 1; i <= totalPages; i++) {
+            const li = document.createElement('li');
+            const isActive = currentPage === i;
+            li.className = `page-item ${isActive ? 'active' : ''}`;
+            li.innerHTML = `
+                <a class="page-link border-light-subtle px-3 shadow-none ${isActive ? 'bg-success border-success text-white fw-bold' : 'text-dark'}" href="#">
+                    ${i}
+                </a>
+            `;
+            li.addEventListener('click', function(e) {
+                e.preventDefault();
+                currentPage = i;
+                filterAndPaginatePaidTransactions();
+            });
+            controlsContainer.appendChild(li);
+        }
+
+        // Next Button Link
+        const nextLi = document.createElement('li');
+        nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
+        nextLi.innerHTML = `<a class="page-link border-light-subtle rounded-end-pill px-3 text-dark shadow-none" href="#" aria-label="Next">&raquo;</a>`;
+        if (currentPage !== totalPages) {
+            nextLi.addEventListener('click', function(e) {
+                e.preventDefault();
+                currentPage++;
+                filterAndPaginatePaidTransactions();
+            });
+        }
+        controlsContainer.appendChild(nextLi);
     }
 
     if (searchInput) {
-        searchInput.addEventListener('input', filterPaidTransactions);
+        searchInput.addEventListener('input', function() {
+            currentPage = 1;
+            filterAndPaginatePaidTransactions();
+        });
     }
+
+    // Initialize pagination
+    filterAndPaginatePaidTransactions();
 });
 </script>
 {% endblock %}

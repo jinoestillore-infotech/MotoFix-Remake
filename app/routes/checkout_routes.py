@@ -27,8 +27,13 @@ def success(order_id):
 
 @checkout_bp.route('/orders', methods=['GET'])
 def list_orders():
-    """Renders the Client-side orders tracking view"""
+    """Renders the Client-side active orders tracking view"""
     return CheckoutController.view_orders()
+
+@checkout_bp.route('/paid-history', methods=['GET'])
+def paid_history():
+    """Renders the Client-side paid transactions archival log"""
+    return CheckoutController.view_client_paid_history()
 
 @checkout_bp.route('/order-count', methods=['GET'])
 def order_count():

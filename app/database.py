@@ -12,7 +12,7 @@ class Database:
             try:
                 cls._pool = mysql.connector.pooling.MySQLConnectionPool(
                     pool_name="moto_pool",
-                    pool_size=10,  # Max connections in pool
+                    pool_size=10, 
                     host=Config.DB_HOST,
                     user=Config.DB_USER,
                     password=Config.DB_PASSWORD,

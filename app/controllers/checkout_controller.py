@@ -126,18 +126,41 @@ class CheckoutController:
 
     @staticmethod
     def view_orders():
-        """Fetches and displays past transaction orders list with dynamic item sets"""
+        """Fetches and displays past active/unpaid client transactions"""
         user_id = session.get('user_id')
         orders = Order.find_by_user_id(user_id)
         orders_list = []
         
         for order in orders:
+            # FILTER: Exclude paid history records from this tracking page
+            if order.get('is_paid') == 1:
+                continue
+                
             order_dict = dict(order)
             items = Order.get_order_items(order['id'])
             order_dict['order_items'] = items
             orders_list.append(order_dict)
             
         return render_template('client-page/orders.html', orders=orders_list)
+
+    @staticmethod
+    def view_client_paid_history():
+        """Displays settled/paid purchase receipt summaries exclusively for the client"""
+        user_id = session.get('user_id')
+        orders = Order.find_by_user_id(user_id)
+        paid_list = []
+        total_spent = 0.0
+        
+        for order in orders:
+            # FILTER: Include ONLY paid history records in this archive page
+            if order.get('is_paid') == 1:
+                order_dict = dict(order)
+                items = Order.get_order_items(order['id'])
+                order_dict['order_items'] = items
+                total_spent += float(order['total_amount'])
+                paid_list.append(order_dict)
+                
+        return render_template('client-page/paid_history.html', orders=paid_list, total_spent=total_spent)
 
     @staticmethod
     def get_order_count_api():
