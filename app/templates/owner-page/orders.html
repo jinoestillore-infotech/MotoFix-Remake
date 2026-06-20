@@ -170,7 +170,7 @@
                                             {% if order.fulfillment_method == 'pickup' %}
                                                 bg-light text-secondary border border-light-subtle
                                             {% else %}
-                                                bg-primary-subtle text-primary border border-primary-subtle
+                                                bg-light text-secondary border border-light-subtle
                                             {% endif %}">
                                             {% if order.fulfillment_method == 'pickup' %}
                                                 <i class="fa-solid fa-store me-1 text-warning"></i>Pickup
@@ -305,9 +305,9 @@
                             </div>
 
                             {% if order.fulfillment_method == 'delivery' %}
-                                <div class="col-12 mt-2">
+                                <div class="col-12 mt-3">
                                     <span class="text-muted d-block mb-1 text-uppercase fw-semibold small tracking-wider" style="font-size: 0.75rem;">Shipping Address</span>
-                                    <span class="fw-medium text-dark d-block bg-light p-2.5 rounded-3 border border-light-subtle fs-7">
+                                    <span class="fw-medium text-dark d-block bg-light p-2 rounded-3 border border-light-subtle fs-7">
                                         <i class="fa-solid fa-location-dot me-2 text-danger"></i>{{ order.address }}
                                     </span>
                                 </div>

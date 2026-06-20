@@ -156,7 +156,7 @@
                                             <div class="min-w-0">
                                                 Fulfillment: <strong class="text-dark text-capitalize fs-8">{{ order.fulfillment_method }}</strong>
                                                 {% if order.fulfillment_method == 'delivery' %}
-                                                    <span class="d-block text-truncate mt-1 text-muted" title="{{ order.address }}">
+                                                    <span class="mt-1 text-break text-muted" title="{{ order.address }}"><br />
                                                         {{ order.address }}
                                                     </span>
                                                 {% endif %}
