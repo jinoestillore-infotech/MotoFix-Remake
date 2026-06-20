@@ -1,0 +1,400 @@
+{% extends 'layouts/owner-base.html' %}
+
+{% block title %}Appointments Queue - MotoFix{% endblock %}
+
+{% block content %}
+<style>
+    .fs-7 { font-size: 0.875rem; }
+    .fs-8 { font-size: 0.8rem; }
+    .fs-9 { font-size: 0.735rem; }
+    .fw-extrabold { font-weight: 800; }
+    
+    .status-nav-group {
+        background-color: #f8f9fa;
+        padding: 0.35rem;
+        border-radius: 50rem;
+        border: 1px solid #e9ecef;
+    }
+    .filter-status-btn {
+        border: 1px solid transparent !important;
+        font-weight: 600 !important;
+        font-size: 0.85rem !important;
+        padding: 0.45rem 1.25rem !important;
+        color: #495057 !important;
+        background: transparent !important;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+    .filter-status-btn.btn-dark {
+        background-color: #ffffff !important;
+        color: #212529 !important;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.06) !important;
+        border: 1px solid orange !important;
+    }
+
+    #appointmentsTable th {
+        background-color: #f8f9fa;
+        color: #495057;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+    }
+    .appointment-row-item {
+        transition: all 0.15s ease;
+    }
+    .appointment-row-item:hover {
+        background-color: rgba(248, 249, 250, 0.85) !important;
+        transform: translateY(-1px);
+        box-shadow: inset 4px 0 0 #ffc107;
+    }
+
+    .scrollbar-hidden::-webkit-scrollbar {
+        display: none;
+    }
+    .scrollbar-hidden {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch; 
+    }
+
+    .btn-dashboard-back {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        color: #495057;
+        font-weight: 600;
+        transition: all 0.2s ease;
+    }
+    .btn-dashboard-back:hover {
+        background-color: #212529;
+        color: #ffffff;
+        border-color: #212529;
+    }
+</style>
+
+<div class="container-fluid py-4 px-md-4">
+    <!-- Top Action Header Bar -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+        <a href="{{ url_for('dashboard.owner_dashboard') }}" class="btn btn-sm rounded-pill fw-semibold">
+            <i class="fas fa-arrow-left me-1"></i> Dashboard
+        </a>
+    </div>
+
+    <!-- Header Block -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap mb-4 gap-3 mt-2">
+        <div>
+            <h1 class="h3 mb-1 text-dark fw-extrabold tracking-tight">Service Appointments</h1>
+            <p class="text-muted fs-7 mb-0">Approve schedules, assign mechanics, and monitor diagnostic queues with real-time overlap checking.</p>
+        </div>
+    </div>
+
+    <!-- Controls Panel -->
+    <div class="row g-3 mb-4 align-items-center">
+        <div class="col-12 col-xl-5">
+            <div class="input-group shadow-sm rounded-3 overflow-hidden">
+                <span class="input-group-text bg-white border-end-0 text-muted py-2.5"><i class="fas fa-search"></i></span>
+                <input type="text" id="ownerApptSearch" class="form-control border-start-0 ps-1 py-2.5 fs-7 shadow-none" placeholder="Search by Client Name, Plate No, Model, or ID...">
+            </div>
+        </div>
+        <div class="col-12 col-xl-7 d-flex justify-content-xl-end">
+            <div class="d-flex align-items-center status-nav-group overflow-x-auto scrollbar-hidden w-100 w-xl-auto shadow-sm">
+                <button class="btn btn-dark btn-sm rounded-pill filter-status-btn text-nowrap" data-status="all">All</button>
+                <button class="btn btn-outline-secondary btn-sm rounded-pill filter-status-btn text-nowrap" data-status="pending">Pending</button>
+                <button class="btn btn-outline-secondary btn-sm rounded-pill filter-status-btn text-nowrap" data-status="approved">Approved</button>
+                <button class="btn btn-outline-secondary btn-sm rounded-pill filter-status-btn text-nowrap" data-status="completed">Completed</button>
+                <button class="btn btn-outline-secondary btn-sm rounded-pill filter-status-btn text-nowrap" data-status="cancelled">Cancelled</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Appointments Table Card -->
+    <div class="card border border-light-subtle shadow-sm rounded-4 overflow-hidden mb-5 bg-white">
+        <div class="card-body p-0">
+            {% if appointments %}
+                <div class="table-responsive scrollbar-hidden">
+                    <table class="table table-hover align-middle mb-0" id="appointmentsTable">
+                        <thead>
+                            <tr class="text-uppercase fw-bold text-muted border-bottom">
+                                <th class="ps-4 py-3 fw-bold">ID & Date</th>
+                                <th class="py-3 fw-bold">Client Contact</th>
+                                <th class="py-3 fw-bold">Motorcycle Details</th>
+                                <th class="py-3 fw-bold">Preferred Time</th>
+                                <th class="py-3 fw-bold">Assigned Mechanic</th>
+                                <th class="py-3 text-center fw-bold">Status</th>
+                                <th class="pe-4 py-3 text-end fw-bold" style="width: 180px;">Operations</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for appt in appointments %}
+                                <tr class="appointment-row-item border-bottom border-light-subtle" 
+                                    data-status="{{ appt.status|lower }}"
+                                    data-client="{{ appt.client_first|lower }} {{ appt.client_last|lower }}"
+                                    data-plate="{{ appt.plate_number|lower }}"
+                                    data-model="{{ appt.motorcycle_name|lower }}"
+                                    data-id="{{ appt.id }}">
+                                    
+                                    <td class="ps-4 py-3.5">
+                                        <span class="font-monospace fw-bold text-dark d-block">#0001-{{ appt.id }}</span>
+                                        <small class="text-muted d-block mt-0.5">
+                                            {{ appt.appointment_date.strftime('%b %d, %Y') if appt.appointment_date is not string else appt.appointment_date }}
+                                        </small>
+                                    </td>
+                                    <td class="py-3.5">
+                                        <div class="fw-bold text-dark fs-7 mb-0.5">{{ appt.client_first }} {{ appt.client_last }}</div>
+                                        <div class="text-muted fs-8">{{ appt.client_phone or 'No phone logged' }}</div>
+                                    </td>
+                                    <td class="py-3.5">
+                                        <span class="badge bg-light text-dark border rounded-3 px-2 py-1 fw-bold fs-9">{{ appt.motorcycle_name }}</span>
+                                        <div class="text-muted font-monospace fs-9 mt-1">Plate: {{ appt.plate_number }}</div>
+                                    </td>
+                                    <td class="py-3.5">
+                                        <span class="text-dark fw-bold fs-7">
+                                            {% set t_str = appt.appointment_time|string %}
+                                            {% if '08:00' in t_str %}
+                                                08:00 AM - 09:00 AM
+                                            {% elif '09:05' in t_str %}
+                                                09:05 AM - 10:00 AM
+                                            {% elif '10:05' in t_str %}
+                                                10:05 AM - 11:00 AM
+                                            {% elif '13:05' in t_str %}
+                                                01:05 PM - 02:00 PM
+                                            {% elif '14:05' in t_str %}
+                                                02:05 PM - 03:00 PM
+                                            {% elif '15:05' in t_str %}
+                                                03:05 PM - 05:00 PM
+                                            {% else %}
+                                                {{ t_str }}
+                                            {% endif %}
+                                        </span>
+                                    </td>
+                                    <td class="py-3.5">
+                                        {% if appt.mechanic_id %}
+                                            <div class="fw-bold text-dark fs-7">
+                                                <i class="fa-solid fa-user-gear text-secondary me-1"></i>
+                                                {{ appt.mechanic_first }} {{ appt.mechanic_last }}
+                                            </div>
+                                        {% else %}
+                                            <span class="text-muted fst-italic fs-8">Awaiting assignment...</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center py-3.5">
+                                        <span class="badge rounded-pill text-uppercase fs-9 py-1.5 px-3 fw-extrabold tracking-wide
+                                            {% if appt.status|lower == 'pending' %}
+                                                bg-warning-subtle text-warning border border-warning-subtle
+                                            {% elif appt.status|lower == 'approved' %}
+                                                bg-primary-subtle text-primary border border-primary-subtle
+                                            {% elif appt.status|lower == 'completed' %}
+                                                bg-success-subtle text-success border border-success-subtle
+                                            {% else %}
+                                                bg-danger-subtle text-danger border border-danger-subtle
+                                            {% endif %}">
+                                            {{ appt.status }}
+                                        </span>
+                                    </td>
+                                    <td class="pe-4 py-3.5 text-end">
+                                        <button class="btn btn-dark btn-sm rounded-pill fw-bold px-3 shadow-sm fs-9" data-bs-toggle="modal" data-bs-target="#apptDetailsModal{{ appt.id }}">
+                                            <i class="fa-solid fa-list-check me-1 text-warning"></i> Inspect Ticket
+                                        </button>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="noApptsPlaceholder" class="text-center py-5 d-none">
+                    <div class="text-muted mb-3 opacity-30">
+                        <i class="fa-solid fa-calendar-times fa-4x"></i>
+                    </div>
+                    <h5 class="fw-bold text-dark mb-1">No Matching Appointments Found</h5>
+                    <p class="text-muted fs-8 mx-auto" style="max-width: 380px;">We couldn't find any historical client bookings fitting the searched filters.</p>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <div class="text-muted mb-3 opacity-30">
+                        <i class="fas fa-calendar-check fa-4x"></i>
+                    </div>
+                    <h5 class="fw-bold text-dark mb-1">No Active Appointments</h5>
+                    <p class="text-muted fs-8 mx-auto mb-0" style="max-width: 350px;">Appointments placed by clients via portal scheduling will appear in this queue instantly.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if appointments %}
+    {% for appt in appointments %}
+        <!-- Appointment Inspect Modal -->
+        <div class="modal fade" id="apptDetailsModal{{ appt.id }}" tabindex="-1" aria-labelledby="apptLabel{{ appt.id }}" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content border-0 rounded-4 shadow-lg text-dark overflow-hidden">
+                    
+                    <div class="modal-header bg-light border-bottom border-light-subtle py-3 px-4 align-items-center">
+                        <h5 class="modal-title fw-bold text-dark fs-5 tracking-tight" id="apptLabel{{ appt.id }}">
+                            <i class="fa-solid fa-calendar-check text-warning me-2"></i>Appointment #0001-{{ appt.id }}
+                        </h5>
+                        <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    
+                    <div class="modal-body p-4 bg-white">
+                        <div class="row g-4 mb-4 pb-3 border-bottom border-light-subtle">
+                            <div class="col-6 col-md-4">
+                                <span class="text-muted d-block mb-1 text-uppercase fw-semibold small tracking-wider" style="font-size: 0.75rem;">Client Name</span>
+                                <span class="fw-bold d-block text-dark">{{ appt.client_first }} {{ appt.client_last }}</span>
+                                <span class="text-muted small">{{ appt.client_phone or 'N/A' }}</span>
+                            </div>
+                            <div class="col-6 col-md-4">
+                                <span class="text-muted d-block mb-1 text-uppercase fw-semibold small tracking-wider" style="font-size: 0.75rem;">Vehicle Model</span>
+                                <span class="fw-bold d-block text-dark">{{ appt.motorcycle_name }}</span>
+                                <span class="badge bg-light text-secondary border font-monospace mt-1">Plate: {{ appt.plate_number }}</span>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <span class="text-muted d-block mb-1 text-uppercase fw-semibold small tracking-wider" style="font-size: 0.75rem;">Target Slot Time</span>
+                                <span class="fw-bold d-block text-dark">
+                                    {{ appt.appointment_date.strftime('%b %d, %Y') if appt.appointment_date is not string else appt.appointment_date }}
+                                </span>
+                                <span class="text-primary small fw-bold">
+                                    {% set t_str = appt.appointment_time|string %}
+                                    {% if '08:00' in t_str %}
+                                        08:00 AM - 09:00 AM
+                                    {% elif '09:05' in t_str %}
+                                        09:05 AM - 10:00 AM
+                                    {% elif '10:05' in t_str %}
+                                        10:05 AM - 11:00 AM
+                                    {% elif '13:05' in t_str %}
+                                        01:05 PM - 02:00 PM
+                                    {% elif '14:05' in t_str %}
+                                        02:05 PM - 03:00 PM
+                                    {% elif '15:05' in t_str %}
+                                        03:05 PM - 05:00 PM
+                                    {% else %}
+                                        {{ t_str }}
+                                    {% endif %}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Customer Problem details -->
+                        <div class="bg-light p-3 rounded-3 mb-4 border">
+                            <span class="text-secondary fw-bold d-block mb-1 fs-9">Reported Symptoms & Diagnostics Requested:</span>
+                            <p class="mb-0 text-dark small fst-italic">"{{ appt.reason }}"</p>
+                        </div>
+
+                        <!-- Service Report display if Completed -->
+                        {% if appt.status|lower == 'completed' %}
+                            <div class="bg-success bg-opacity-10 border border-success border-opacity-25 rounded-3 p-3 mb-4 text-dark">
+                                <h6 class="fw-bold text-success text-uppercase tracking-wider fs-9 mb-2"><i class="fa-solid fa-circle-check me-1"></i>Completed Mechanic service report</h6>
+                                <div class="mb-2">
+                                    <strong class="small text-muted d-block mb-1">Diagnostic Report:</strong>
+                                    <p class="small mb-0 fst-italic">"{{ appt.service_report }}"</p>
+                                </div>
+                                <div>
+                                    <strong class="small text-muted d-block mb-1">Parts Replaced / Used:</strong>
+                                    <span class="badge bg-success text-white px-2.5 py-1 fw-bold fs-9 text-uppercase tracking-wide">
+                                        {{ appt.parts_replaced or 'None' }}
+                                    </span>
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        <!-- Mechanic Assignment / Overlap Resolver Section -->
+                        {% if appt.status|lower in ('pending', 'approved') %}
+                            <h6 class="fw-bold text-uppercase tracking-wider text-muted border-bottom border-light-subtle pb-2 mb-3" style="font-size: 0.75rem;">
+                                Assign / Reassign Mechanic
+                            </h6>
+                            <form action="{{ url_for('dashboard.owner_assign_mechanic') }}" method="POST" class="m-0">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="appointment_id" value="{{ appt.id }}">
+
+                                <div class="row align-items-center g-3">
+                                    <div class="col-12 col-sm-8">
+                                        <label class="form-label text-dark small fw-semibold">Choose Professional Technician:</label>
+                                        <select class="form-select border-light-subtle py-2 shadow-none rounded-3" name="mechanic_id" required>
+                                            <option value="" disabled selected>Select Mechanic</option>
+                                            {% for mech in mechanics %}
+                                                <option value="{{ mech.id }}" {% if appt.mechanic_id == mech.id %}selected{% endif %}>
+                                                    {{ mech.first_name }} {{ mech.last_name }} ({{ mech.email }})
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                        <div class="form-text text-muted small mt-1.5"><i class="fa-solid fa-circle-info me-1"></i>System verifies date/time slot conflict automatically on click.</div>
+                                    </div>
+                                    <div class="col-12 col-sm-4 pt-sm-4">
+                                        <button type="submit" class="btn btn-warning w-100 rounded-3 fw-bold py-2 shadow-sm">
+                                            Confirm Assignment
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        {% else %}
+                            <div class="text-center py-2">
+                                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-3 py-1.5 rounded-pill fs-8">
+                                    <i class="fa-solid fa-lock me-1"></i> Record locked in Completed/Cancelled state
+                                </span>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+{% endif %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('ownerApptSearch');
+    const filterButtons = document.querySelectorAll('.filter-status-btn');
+    const rows = document.querySelectorAll('.appointment-row-item');
+    const placeholder = document.getElementById('noApptsPlaceholder');
+    const tableEl = document.querySelector('table');
+
+    let activeFilterStatus = 'all';
+
+    function executeApptFiltering() {
+        const query = searchInput.value.toLowerCase().trim();
+        let matchCount = 0;
+
+        rows.forEach(row => {
+            const status = row.getAttribute('data-status');
+            const clientName = row.getAttribute('data-client');
+            const plate = row.getAttribute('data-plate');
+            const model = row.getAttribute('data-model');
+            const apptId = row.getAttribute('data-id');
+
+            const matchesSearch = clientName.includes(query) || 
+                                  plate.includes(query) || 
+                                  model.includes(query) || 
+                                  apptId.includes(query);
+
+            const matchesTabStatus = (activeFilterStatus === 'all') || (status === activeFilterStatus);
+
+            if (matchesSearch && matchesTabStatus) {
+                row.style.setProperty('display', '', 'important');
+                matchCount++;
+            } else {
+                row.style.setProperty('display', 'none', 'important');
+            }
+        });
+
+        if (matchCount === 0 && rows.length > 0) {
+            if (placeholder) placeholder.classList.remove('d-none');
+            if (tableEl) tableEl.classList.add('d-none');
+        } else {
+            if (placeholder) placeholder.classList.add('d-none');
+            if (tableEl) tableEl.classList.remove('d-none');
+        }
+    }
+
+    filterButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            filterButtons.forEach(b => b.classList.remove('btn-dark'));
+            this.classList.add('btn-dark');
+
+            activeFilterStatus = this.getAttribute('data-status');
+            executeApptFiltering();
+        });
+    });
+
+    if (searchInput) {
+        searchInput.addEventListener('input', executeApptFiltering);
+    }
+});
+</script>
+{% endblock %}

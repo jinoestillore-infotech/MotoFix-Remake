@@ -1,4 +1,3 @@
-# project/app/models/cart.py
 from app.database import Database
 
 class Cart:

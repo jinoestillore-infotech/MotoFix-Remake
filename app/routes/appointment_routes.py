@@ -24,3 +24,8 @@ def book():
 def cancel(appointment_id):
     """Secure client cancellation endpoint"""
     return AppointmentController.cancel_appointment(appointment_id)
+
+@appointment_bp.route('/count', methods=['GET'])
+def count():
+    """AJAX API endpoint returning live approved or cancelled appointment badge counts"""
+    return AppointmentController.get_badge_count_api()

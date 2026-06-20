@@ -1,4 +1,3 @@
-# project/app/models/order.py
 from app.database import Database
 
 class Order:

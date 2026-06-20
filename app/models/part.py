@@ -1,4 +1,3 @@
-# project/app/models/part.py
 from app.database import Database
 
 class Part:

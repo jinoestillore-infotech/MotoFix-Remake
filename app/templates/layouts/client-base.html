@@ -72,6 +72,7 @@
             <a href="{{ url_for('appointment.list_appointments') }}" class="{% if request.endpoint == 'appointment.list_appointments' %}active{% endif %}">
                 <i class="fa-solid fa-calendar-check me-1"></i>
                 Appointments
+                <span class="badge bg-danger rounded-pill ms-1 d-none" id="global-appointment-badge">0</span>
             </a>
             <a href="{{ url_for('auth.logout') }}" class="text-danger">
                 <i class="fa-solid fa-sign-out-alt me-1"></i>
@@ -131,6 +132,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     const cartBadge = document.getElementById('global-cart-badge');
     const orderBadge = document.getElementById('global-order-badge');
+    const appointmentBadge = document.getElementById('global-appointment-badge');
     const toastEl = document.getElementById('cartToast');
     const toastMessage = document.getElementById('toast-message');
     const toastIcon = document.getElementById('toast-icon');
@@ -203,9 +205,27 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(err => console.error("Error updating order counts:", err));
     };
 
+    // Function to load dynamic appointment badge count (Approved + Cancelled)
+    window.refreshAppointmentBadge = function() {
+        fetch('/appointments/count')
+            .then(res => res.json())
+            .then(data => {
+                if (appointmentBadge) {
+                    if (data.appointment_count > 0) {
+                        appointmentBadge.textContent = data.appointment_count;
+                        appointmentBadge.classList.remove('d-none');
+                    } else {
+                        appointmentBadge.classList.add('d-none');
+                    }
+                }
+            })
+            .catch(err => console.error("Error updating appointment counts:", err));
+    };
+
     // Initial count update
     refreshCartBadge();
     refreshOrderBadge();
+    refreshAppointmentBadge();
 });
 
 // Auto-dismiss the mobile sliding helper hint banner

@@ -1,5 +1,3 @@
-# FILE LOCATION: project/app/routes/inventory_routes.py
-
 from flask import Blueprint
 from app.controllers.inventory_controller import InventoryController
 from app.classes.Authentication import Authentication

@@ -1,4 +1,3 @@
-# project/app/services/inventory_service.py
 from app.models.part import Part
 import re
 

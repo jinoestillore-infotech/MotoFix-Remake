@@ -1,4 +1,3 @@
-# project/app/models/payment_setting.py
 from app.database import Database
 
 class PaymentSetting:

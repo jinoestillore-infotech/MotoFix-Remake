@@ -1,4 +1,3 @@
-# project/app/controllers/inventory_controller.py
 import os
 from flask import render_template, request, redirect, url_for, flash
 from werkzeug.utils import secure_filename

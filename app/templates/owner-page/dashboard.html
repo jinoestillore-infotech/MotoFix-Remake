@@ -1,9 +1,9 @@
-{% extends 'layouts/base.html' %}
+{% extends 'layouts/owner-base.html' %}
 
 {% block title %}Owner Dashboard - MotoFix{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-2">
+<div class="container-fluid py-2 pt-4">
     <!-- Header Block -->
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
         <div>
@@ -14,6 +14,9 @@
             <span class="badge bg-dark-subtle text-dark border border-dark-subtle px-3 py-2 rounded-pill small fw-medium">
                 <i class="fas fa-user-shield me-1 text-dark"></i> Administrator: {{ session.get('first_name') }} {{ session.get('last_name') }}
             </span>
+            <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-danger btn-sm rounded-pill px-3 py-1 fw-semibold fs-7">
+                <i class="fa-solid fa-sign-out-alt me-1"></i> Logout
+            </a>
         </div>
     </div>
 
@@ -125,7 +128,28 @@
             </div>
         </div>
 
-        <!-- Card 3: Staff Mechanics Onboarding -->
+        <!-- Card 3: Appointment Bookings Scheduler (NOW ENHANCED & FUNCTIONAL) -->
+        <div class="col-12 col-md-6 col-lg-3">
+            <div class="card border border-light-subtle shadow-sm rounded-4 h-100 card-hover-effect">
+                <div class="card-body d-flex flex-column p-4">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="p-3 rounded-3 bg-warning-subtle text-warning-emphasis">
+                            <i class="fa-solid fa-calendar-check fa-xl"></i>
+                        </div>
+                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">Active</span>
+                    </div>
+                    <h5 class="fw-bold text-dark">Appointments Queue</h5>
+                    <p class="text-muted small flex-grow-1">View incoming diagnostics requests, approve client booking slots, check mechanic availability, and prevent scheduling conflicts.</p>
+                    <div class="mt-3">
+                        <a href="{{ url_for('dashboard.owner_appointments') }}" class="btn btn-dark rounded-pill w-100 fw-semibold shadow-sm">
+                            Manage Appointments
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 4: Staff Mechanics Onboarding -->
         <div class="col-12 col-md-6 col-lg-3">
             <div class="card border border-light-subtle shadow-sm rounded-4 h-100 card-hover-effect">
                 <div class="card-body d-flex flex-column p-4">
@@ -146,7 +170,7 @@
             </div>
         </div>
 
-        <!-- Card 4: Manage Payment Configurations (New Feature Launchpad) -->
+        <!-- Card 5: Manage Payment Configurations -->
         <div class="col-12 col-md-6 col-lg-3">
             <div class="card border border-light-subtle shadow-sm rounded-4 h-100 card-hover-effect">
                 <div class="card-body d-flex flex-column p-4">
@@ -166,27 +190,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- Card 5: Appointment Bookings Scheduler -->
-        <div class="col-12 col-md-6 col-lg-3">
-            <div class="card border border-light-subtle shadow-sm rounded-4 h-100 card-hover-effect opacity-75">
-                <div class="card-body d-flex flex-column p-4 bg-light-subtle">
-                    <div class="d-flex align-items-center justify-content-between mb-3">
-                        <div class="p-3 rounded-3 bg-warning-subtle text-warning-emphasis">
-                            <i class="fa-solid fa-calendar-check fa-xl"></i>
-                        </div>
-                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill">Upcoming</span>
-                    </div>
-                    <h5 class="fw-bold text-dark">Appointments Queue</h5>
-                    <p class="text-muted small flex-grow-1">View incoming diagnostics requests, approve client booking slots, and delegate mechanics to active repair tickets.</p>
-                    <div class="mt-3">
-                        <button class="btn btn-outline-secondary rounded-pill w-100 fw-semibold" disabled>
-                            <i class="fa-solid fa-clock me-2"></i>Coming Soon
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 </div>
 
@@ -199,7 +202,6 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form action="{{ url_for('auth.onboard_mechanic') }}" method="POST">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="role_id" value="2">
                 
                 <div class="modal-body p-4">
@@ -222,11 +224,11 @@
                         </div>
                         <div class="col-md-6">
                             <label for="mech_pass" class="form-label text-dark small fw-semibold">Password</label>
-                            <input type="password" class="form-control border-light-subtle" id="mech_pass" name="password" minlength="6" required>
+                            <input type="password" class="form-control border-light-subtle" id="mech_pass" name="password" minlength="6" placeholder="********" required>
                         </div>
                         <div class="col-md-6">
                             <label for="mech_confirm" class="form-label text-dark small fw-semibold">Confirm Password</label>
-                            <input type="password" class="form-control border-light-subtle" id="mech_confirm" name="confirm_password" minlength="6" required>
+                            <input type="password" class="form-control border-light-subtle" id="mech_confirm" name="confirm_password" minlength="6" placeholder="********" required>
                         </div>
                     </div>
                 </div>

@@ -1,12 +1,13 @@
-# project/app/controllers/dashboard_controller.py
 import os
 from flask import render_template, request, session, redirect, url_for, flash
 from werkzeug.utils import secure_filename
-from app.database import Database
+from app.database import Database 
 from app.models.user import User
 from app.models.part import Part
 from app.models.order import Order
+from app.models.appointment import Appointment
 from app.models.payment_setting import PaymentSetting
+from app.services.appointment_service import AppointmentService 
 
 # Configuration guidelines for valid payment QR uploads
 ALLOWED_PAYMENT_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp', 'gif'}
@@ -24,39 +25,122 @@ class DashboardController:
         total_clients_query = "SELECT COUNT(*) as count FROM users WHERE role_id = 3"
         total_mechanics_query = "SELECT COUNT(*) as count FROM users WHERE role_id = 2"
         pending_orders_query = "SELECT COUNT(*) as count FROM orders WHERE status = 'Pending'"
+        pending_appointments_query = "SELECT COUNT(*) as count FROM appointments WHERE status = 'Pending'"
 
         try:
-            # Resolved User.Database error by executing queries via direct Database class
             total_clients = Database.execute_query(total_clients_query)[0]['count']
             total_mechanics = Database.execute_query(total_mechanics_query)[0]['count']
             pending_orders = Database.execute_query(pending_orders_query)[0]['count']
+            pending_appointments = Database.execute_query(pending_appointments_query)[0]['count']
             low_stock = Part.get_low_stock_count()
         except Exception as e:
-            # Standard error logging to console
             print(f"Error loading dashboard metrics: {str(e)}")
             total_clients = 0
             total_mechanics = 0
             pending_orders = 0
+            pending_appointments = 0
             low_stock = 0
 
-        # Aligned keys with the 'dashboard.html' requirements ('pending_orders')
+        # Aligned keys with the 'dashboard.html' requirements
         stats = {
             'total_clients': total_clients,
             'total_mechanics': total_mechanics,
             'pending_orders': pending_orders,
+            'pending_appointments': pending_appointments,
             'low_stock_parts': low_stock
         }
         return render_template('owner-page/dashboard.html', stats=stats)
 
     @staticmethod
     def mechanic_dashboard():
-        return render_template('mechanic-page/dashboard.html')
+        """Loads diagnostic dashboard panel for the logged-in mechanic"""
+        mechanic_id = session.get('user_id')
+        assigned_jobs = Appointment.find_by_mechanic_id(mechanic_id)
+
+        # Segment logs for statistics counters
+        pending_count = sum(1 for j in assigned_jobs if j['status'] == 'Approved')
+        completed_count = sum(1 for j in assigned_jobs if j['status'] == 'Completed')
+
+        stats = {
+            'pending_jobs': pending_count,
+            'completed_jobs': completed_count,
+            'total_jobs': len(assigned_jobs)
+        }
+
+        return render_template(
+            'mechanic-page/dashboard.html', 
+            jobs=assigned_jobs, 
+            stats=stats
+        )
 
     @staticmethod
     def client_index():
         parts = Part.find_all()
         categories = ['Engine', 'Brakes', 'Suspension', 'Tires & Wheels', 'Electrical', 'Body & Frame', 'Fluids & Lubes', 'Accessories']
         return render_template('client-page/index.html', parts=parts, categories=categories)
+
+    # --- OWNER APPOINTMENT MANAGEMENT ACTIONS ---
+
+    @staticmethod
+    def view_owner_appointments():
+        """Renders administrative appointment queue list displaying active scheduling conflicts"""
+        appointments = Appointment.find_all()
+        mechanics = Appointment.get_all_active_mechanics()
+        return render_template(
+            'owner-page/appointments.html', 
+            appointments=appointments, 
+            mechanics=mechanics
+        )
+
+    @staticmethod
+    def owner_assign_mechanic():
+        """POST handler to assign a mechanic and check scheduling conflicts before approval"""
+        appointment_id = request.form.get('appointment_id', type=int)
+        mechanic_id = request.form.get('mechanic_id', type=int)
+
+        if not appointment_id or not mechanic_id:
+            flash("Please choose a valid appointment and mechanic.", "danger")
+            return redirect(url_for('dashboard.owner_appointments'))
+
+        # Corrected: Call approve_and_assign_mechanic from AppointmentService
+        result = AppointmentService.approve_and_assign_mechanic(appointment_id, mechanic_id)
+
+        if result['success']:
+            flash(result['message'], "success")
+        else:
+            flash(result['message'], "danger")
+
+        return redirect(url_for('dashboard.owner_appointments'))
+
+    # --- MECHANIC SERVICE REPORT ACTIONS ---
+
+    @staticmethod
+    def mechanic_complete_appointment():
+        """POST handler for mechanics submitting diagnostic reports and marking appointments complete"""
+        mechanic_id = session.get('user_id')
+        appointment_id = request.form.get('appointment_id', type=int)
+        service_report = request.form.get('service_report', '').strip()
+        parts_replaced = request.form.get('parts_replaced', '').strip()
+
+        if not appointment_id:
+            flash("Invalid appointment ticket identification received.", "danger")
+            return redirect(url_for('dashboard.mechanic_dashboard'))
+
+        result = AppointmentService.complete_service(
+            appointment_id=appointment_id,
+            mechanic_id=mechanic_id,
+            service_report=service_report,
+            parts_replaced=parts_replaced
+        )
+
+        if result['success']:
+            flash(result['message'], "success")
+        else:
+            flash(result['message'], "danger")
+
+        return redirect(url_for('dashboard.mechanic_dashboard'))
+
+    # --- REMAINING LEGACY DASHBOARD CONTROLS ---
 
     @staticmethod
     def view_owner_orders():
@@ -75,7 +159,7 @@ class DashboardController:
         status = request.form.get('status')
         if status:
             Order.update_status(order_id, status)
-            flash(f"Order status successfully updated to '{status}'!", "success")
+            flash(f"Order #{order_id} status successfully updated to '{status}'!", "success")
         else:
             flash("Invalid status selected.", "danger")
         return redirect(url_for('dashboard.owner_orders'))
@@ -93,7 +177,7 @@ class DashboardController:
             return redirect(url_for('dashboard.owner_orders'))
 
         Order.mark_as_paid(order_id)
-        flash(f"Order has been fully settled and moved to transaction history!", "success")
+        flash(f"Order #{order_id} has been fully settled and moved to transaction history!", "success")
         return redirect(url_for('dashboard.owner_orders'))
 
     @staticmethod
@@ -139,7 +223,6 @@ class DashboardController:
                 upload_folder = os.path.join('app', 'static', 'uploads', 'payments')
                 os.makedirs(upload_folder, exist_ok=True)
                 
-                # Prefix filename with unique key
                 unique_filename = f"gcash_qr_{filename}"
                 file.save(os.path.join(upload_folder, unique_filename))
                 image_filename = unique_filename

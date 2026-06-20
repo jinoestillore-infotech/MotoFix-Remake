@@ -1,4 +1,4 @@
-from flask import render_template, request, session, redirect, url_for, flash
+from flask import render_template, request, session, redirect, url_for, flash, jsonify
 from app.services.appointment_service import AppointmentService
 from app.models.appointment import Appointment
 
@@ -50,3 +50,12 @@ class AppointmentController:
             flash(result['message'], "danger")
             
         return redirect(url_for('appointment.list_appointments'))
+    
+    @staticmethod
+    def get_badge_count_api():
+        """GET JSON API returning live count of approved or cancelled appointments for a client badge"""
+        user_id = session.get('user_id')
+        if not user_id:
+            return jsonify({"appointment_count": 0})
+        count = Appointment.get_badge_count(user_id)
+        return jsonify({"appointment_count": count})

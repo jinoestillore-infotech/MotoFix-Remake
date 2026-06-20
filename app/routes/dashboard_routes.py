@@ -22,6 +22,28 @@ def client_index():
     """Renders active storefront parts catalog for clients"""
     return DashboardController.client_index()
 
+# --- NEW WORKFLOWS FOR APPOINTMENTS & SCHEDULING ---
+
+@dashboard_bp.route('/owner/appointments', methods=['GET'])
+@Authentication.role_required('Owner')
+def owner_appointments():
+    """Renders Owner appointments console list"""
+    return DashboardController.view_owner_appointments()
+
+@dashboard_bp.route('/owner/appointments/assign', methods=['POST'])
+@Authentication.role_required('Owner')
+def owner_assign_mechanic():
+    """Processes assigning a mechanic and resolving schedule overlaps"""
+    return DashboardController.owner_assign_mechanic()
+
+@dashboard_bp.route('/mechanic/appointments/complete', methods=['POST'])
+@Authentication.role_required('Mechanic')
+def mechanic_complete_appointment():
+    """Processes mechanics filing repair logs and completing jobs"""
+    return DashboardController.mechanic_complete_appointment()
+
+# --- CUSTOMER ORDER ADMINISTRATIVE WORKFLOWS ---
+
 @dashboard_bp.route('/owner/orders', methods=['GET'])
 @Authentication.role_required('Owner')
 def owner_orders():
