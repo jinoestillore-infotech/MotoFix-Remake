@@ -78,6 +78,12 @@ class Order:
         return Database.execute_query(query, (order_id,), commit=True)
 
     @staticmethod
+    def clear_paid_history():
+        """Permanently deletes all orders that have been paid and settled (is_paid = 1)"""
+        query = "DELETE FROM orders WHERE is_paid = 1"
+        return Database.execute_query(query, commit=True)
+    
+    @staticmethod
     def find_paid_transactions():
         """Fetches historical sales transactions which are flagged as is_paid = 1"""
         query = """

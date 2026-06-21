@@ -68,6 +68,11 @@ def transaction_history():
     """Renders archived log sheet of fully completed and paid transactions"""
     return DashboardController.view_transaction_history()
 
+@dashboard_bp.route('/owner/history/clear', methods=['POST'])
+def owner_clear_transaction_history():
+    """Route handling safe deletion processing requests to wipe out history"""
+    return DashboardController.owner_clear_transaction_history_post()
+
 @dashboard_bp.route('/owner/payment-settings', methods=['GET'])
 @Authentication.role_required('Owner')
 def payment_settings():

@@ -80,12 +80,23 @@
         </div>
     </div>
 
-    <div class="row g-3 mb-4">
+    <div class="row g-3 mb-4 justify-content-between">
         <div class="col-12 col-md-6 col-xl-5">
             <div class="input-group shadow-sm rounded-3 overflow-hidden">
                 <span class="input-group-text bg-white border-end-0 text-muted"><i class="fas fa-search"></i></span>
                 <input type="text" id="historySearch" class="form-control border-start-0 ps-1 py-2 fs-7 shadow-none" placeholder="Search by Invoice ID, Customer, or Phone...">
             </div>
+        </div>
+        <div class="col-12 col-md-auto text-md-end">
+            {% if orders %}
+                <button type="button" class="btn btn-sm rounded-3 px-3 py-2 fw-semibold text-danger" data-bs-toggle="modal" data-bs-target="#clearHistoryModal">
+                    <i class="fa-solid fa-trash-can me-1.5"></i> Clear Transaction History
+                </button>
+            {% else %}
+                <button type="button" class="btn btn-outline-secondary btn-sm rounded-3 px-3 py-2 fw-semibold" disabled>
+                    <i class="fa-solid fa-trash-can me-1.5"></i> History Empty
+                </button>
+            {% endif %}
         </div>
     </div>
 
@@ -127,7 +138,7 @@
                                             {{ order.fulfillment_method }}
                                         </span>
                                     </td>
-                                    <td class="py-3 text-center">
+                                    <td class="py-3 text-center small">
                                         <span class="badge bg-dark text-white rounded-3 py-2 px-3 text-uppercase">
                                             {{ order.payment_method }}
                                         </span>
@@ -179,6 +190,33 @@
 </div>
 
 {% if orders %}
+    <div class="modal fade" id="clearHistoryModal" tabindex="-1" aria-labelledby="clearHistoryModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content border-0 rounded-4 shadow-lg text-dark overflow-hidden">
+                <div class="modal-body p-4 text-center bg-white">
+                    <div class="text-danger mb-3">
+                        <i class="fa-solid fa-dumpster-fire fa-3x"></i>
+                    </div>
+                    
+                    <h5 class="fw-bold text-dark mb-2" id="clearHistoryModalLabel">Purge Transaction Ledger?</h5>
+                    
+                    <p class="text-muted small mb-4">
+                        This action will completely wipe all <strong>{{ orders|length }}</strong> archived paid entries from your storage history logs. This process is irreversible.
+                    </p>
+                    
+                    <div class="d-flex justify-content-center gap-2">
+                        <button type="button" class="btn btn-light rounded-pill fw-semibold px-3 fs-9" data-bs-dismiss="modal">Cancel</button>
+                        <form action="{{ url_for('dashboard.owner_clear_transaction_history') }}" method="POST" class="m-0">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-danger rounded-pill fw-bold px-3 fs-9">
+                                Yes, Clear History
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     {% for order in orders %}
         <!-- History Inspection Modal -->
         <div class="modal fade" id="historyDetailsModal{{ order.id }}" tabindex="-1" aria-labelledby="historyLabel{{ order.id }}" aria-hidden="true">

@@ -22,7 +22,7 @@ class AppointmentController:
         appointment_date = request.form.get('appointment_date', '').strip()
         appointment_time = request.form.get('appointment_time', '').strip()
 
-        result = AppointmentService.book_new(
+        result = AppointmentService.book_appointment(
             user_id=user_id,
             motorcycle_name=motorcycle_name,
             plate_number=plate_number,
@@ -42,7 +42,7 @@ class AppointmentController:
     def cancel_appointment(appointment_id):
         """POST handler canceling a pending repair slot securely"""
         user_id = session.get('user_id')
-        result = AppointmentService.cancel(appointment_id, user_id)
+        result = AppointmentService.cancel_appointment(appointment_id, user_id)
 
         if result['success']:
             flash(result['message'], "success")

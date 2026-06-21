@@ -12,6 +12,13 @@
     .fs-9 { font-size: 0.735rem; }
     .fw-extrabold { font-weight: 800; }
     
+    /* Scrollable custom table wrapper */
+    .table-responsive-scroll {
+        max-height: 480px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+    }
+    
     /* Modern Clean Tab Strip Segmented Control */
     .status-nav-group {
         background-color: #f8f9fa;
@@ -128,7 +135,7 @@
     <div class="card border border-light-subtle shadow-sm rounded-4 overflow-hidden mb-5 bg-white">
         <div class="card-body p-0">
             {% if orders %}
-                <div class="table-responsive scrollbar-hidden">
+                <div class="table-responsive table-responsive-scroll scrollbar-hidden">
                     <table class="table table-hover align-middle mb-0" id="ownerOrdersTable">
                         <thead>
                             <tr class="text-uppercase fw-bold text-muted border-bottom">
@@ -213,6 +220,17 @@
                             {% endfor %}
                         </tbody>
                     </table>
+                </div>
+
+                <div class="card-footer bg-white border-top border-light-subtle py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div class="text-muted small">
+                        Showing <span id="startIndex" class="fw-bold text-dark">0</span> to <span id="endIndex" class="fw-bold text-dark">0</span> of <span id="totalEntries" class="fw-bold text-dark">0</span> entries
+                    </div>
+                    <nav aria-label="Orders Page Navigation">
+                        <ul class="pagination pagination-sm mb-0" id="paginationControls">
+                            <!-- Controls dynamically injected here -->
+                        </ul>
+                    </nav>
                 </div>
 
                 <div id="ownerNoOrdersPlaceholder" class="text-center py-5 d-none">
@@ -402,13 +420,21 @@ document.addEventListener('DOMContentLoaded', function() {
     const orderRows = document.querySelectorAll('.order-row-item');
     const noOrdersPlaceholder = document.getElementById('ownerNoOrdersPlaceholder');
     const tableHeader = document.querySelector('table');
+    const tableContainer = document.querySelector('.table-responsive');
+    const cardFooter = document.querySelector('.card-footer');
 
     let activeFilterStatus = 'all';
+    
+    // Pagination Parameters
+    const rowsPerPage = 10;
+    let currentPage = 1;
+    let filteredRows = [];
 
     function executeTableFiltering() {
-        const query = searchInput.value.toLowerCase().trim();
-        let matchCount = 0;
+        const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+        filteredRows = [];
 
+        // 1. Filter out non-matching rows based on search parameters and selected status tabs
         orderRows.forEach(row => {
             const orderId = row.getAttribute('data-order-id');
             const status = row.getAttribute('data-status');
@@ -424,20 +450,118 @@ document.addEventListener('DOMContentLoaded', function() {
             const matchesStatusTab = (activeFilterStatus === 'all') || (status === activeFilterStatus);
 
             if (matchesSearch && matchesStatusTab) {
-                row.style.setProperty('display', '', 'important');
-                matchCount++;
+                filteredRows.push(row);
             } else {
                 row.style.setProperty('display', 'none', 'important');
             }
         });
 
-        if (matchCount === 0 && orderRows.length > 0) {
+        const totalEntries = filteredRows.length;
+
+        // Display check for placeholders and metadata
+        if (totalEntries === 0 && orderRows.length > 0) {
             if (noOrdersPlaceholder) noOrdersPlaceholder.classList.remove('d-none');
             if (tableHeader) tableHeader.classList.add('d-none');
+            if (tableContainer) tableContainer.classList.add('d-none');
+            if (cardFooter) cardFooter.classList.add('d-none');
+            return;
         } else {
             if (noOrdersPlaceholder) noOrdersPlaceholder.classList.add('d-none');
             if (tableHeader) tableHeader.classList.remove('d-none');
+            if (tableContainer) tableContainer.classList.remove('d-none');
+            if (cardFooter) cardFooter.classList.remove('d-none');
         }
+
+        const totalPages = Math.ceil(totalEntries / rowsPerPage) || 1;
+
+        // Clamp Current Page limits
+        if (currentPage > totalPages) currentPage = totalPages;
+        if (currentPage < 1) currentPage = 1;
+
+        // Calculate offset markers
+        const startIdx = (currentPage - 1) * rowsPerPage;
+        const endIdx = startIdx + rowsPerPage;
+
+        // 2. Hide all table row elements initially
+        orderRows.forEach(row => {
+            row.style.setProperty('display', 'none', 'important');
+        });
+
+        // 3. Render only the rows sliced for the active page
+        filteredRows.forEach((row, index) => {
+            if (index >= startIdx && index < endIdx) {
+                row.style.setProperty('display', '', 'important');
+            }
+        });
+
+        // Update statistics indicators in the footer
+        const displayStart = totalEntries === 0 ? 0 : startIdx + 1;
+        const displayEnd = Math.min(endIdx, totalEntries);
+
+        const startIndexEl = document.getElementById('startIndex');
+        const endIndexEl = document.getElementById('endIndex');
+        const totalEntriesEl = document.getElementById('totalEntries');
+
+        if (startIndexEl) startIndexEl.textContent = displayStart;
+        if (endIndexEl) endIndexEl.textContent = displayEnd;
+        if (totalEntriesEl) totalEntriesEl.textContent = totalEntries;
+
+        renderPaginationControls(totalPages);
+    }
+
+    function renderPaginationControls(totalPages) {
+        const controlsContainer = document.getElementById('paginationControls');
+        if (!controlsContainer) return;
+
+        controlsContainer.innerHTML = '';
+
+        if (totalPages <= 1) {
+            return;
+        }
+
+        // Previous Button Link
+        const prevLi = document.createElement('li');
+        prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+        prevLi.innerHTML = `<a class="page-link border-light-subtle rounded-start-pill px-3 text-dark shadow-none" href="#" aria-label="Previous">&laquo;</a>`;
+        if (currentPage !== 1) {
+            prevLi.addEventListener('click', function(e) {
+                e.preventDefault();
+                currentPage--;
+                executeTableFiltering();
+            });
+        }
+        controlsContainer.appendChild(prevLi);
+
+        // Page Numbers Links
+        for (let i = 1; i <= totalPages; i++) {
+            const li = document.createElement('li');
+            const isActive = currentPage === i;
+            li.className = `page-item ${isActive ? 'active' : ''}`;
+            li.innerHTML = `
+                <a class="page-link border-light-subtle px-3 shadow-none ${isActive ? 'bg-dark border-dark text-white fw-bold' : 'text-dark'}" href="#">
+                    ${i}
+                </a>
+            `;
+            li.addEventListener('click', function(e) {
+                e.preventDefault();
+                currentPage = i;
+                executeTableFiltering();
+            });
+            controlsContainer.appendChild(li);
+        }
+
+        // Next Button Link
+        const nextLi = document.createElement('li');
+        nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
+        nextLi.innerHTML = `<a class="page-link border-light-subtle rounded-end-pill px-3 text-dark shadow-none" href="#" aria-label="Next">&raquo;</a>`;
+        if (currentPage !== totalPages) {
+            nextLi.addEventListener('click', function(e) {
+                e.preventDefault();
+                currentPage++;
+                executeTableFiltering();
+            });
+        }
+        controlsContainer.appendChild(nextLi);
     }
 
     filterButtons.forEach(btn => {
@@ -448,13 +572,20 @@ document.addEventListener('DOMContentLoaded', function() {
             this.classList.add('btn-dark');
 
             activeFilterStatus = this.getAttribute('data-status');
+            currentPage = 1; // Reset to page 1 on filter state update
             executeTableFiltering();
         });
     });
 
     if (searchInput) {
-        searchInput.addEventListener('input', executeTableFiltering);
+        searchInput.addEventListener('input', function() {
+            currentPage = 1; // Reset to page 1 on active text input search queries
+            executeTableFiltering();
+        });
     }
+
+    // Initialize dynamic pagination and filtering engine
+    executeTableFiltering();
 });
 </script>
 {% endblock %}
