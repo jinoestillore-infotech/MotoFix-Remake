@@ -65,7 +65,13 @@ class Appointment:
         """Modifies status state of an appointment (e.g. Approved, Cancelled)"""
         query = "UPDATE appointments SET status = %s WHERE id = %s"
         return Database.execute_query(query, (status, appointment_id), commit=True)
-
+    
+    @staticmethod
+    def delete(appointment_id: int):
+        """Permanently purges an appointment record from the database table"""
+        query = "DELETE FROM appointments WHERE id = %s"
+        return Database.execute_query(query, (appointment_id,), commit=True)
+    
     @staticmethod
     def assign_mechanic(appointment_id: int, mechanic_id: int, status: str = 'Approved'):
         """Assigns a mechanic to an appointment and sets status to Approved"""

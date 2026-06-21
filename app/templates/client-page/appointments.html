@@ -127,9 +127,13 @@
                         <!-- Footer actions allowing cancellation securely in real-time -->
                         <div class="card-footer bg-light border-top py-2 px-3 d-flex justify-content-between align-items-center">
                             <small class="text-muted fs-9">ID: #0001-{{ appt.id }}</small>
-                            {% if appt.status == 'Pending' %}
-                                <button class="btn btn-outline-danger btn-sm rounded-pill fw-bold py-1 px-3 fs-9" data-bs-toggle="modal" data-bs-target="#cancelModal{{ appt.id }}">
+                            {% if appt.status == 'Pending' or appt.status == 'Completed' %}
+                                <button class="btn btn-outline{% if appt.status == 'Pending' %}-danger {% elif appt.status == 'Completed' %}-success {% endif %} btn-sm rounded-pill fw-bold py-1 px-3 fs-9" data-bs-toggle="modal" data-bs-target="#cancelModal{{ appt.id }}">
+                                    {% if appt.status == 'Pending' %}
                                     Cancel Request
+                                    {% elif appt.status == 'Completed' %}
+                                    Paid
+                                    {% endif %}
                                 </button>
                             {% else %}
                                 <span class="text-muted fs-9 fst-italic">Locked slot</span>
@@ -144,16 +148,35 @@
                     <div class="modal-dialog modal-dialog-centered modal-sm">
                         <div class="modal-content border-0 rounded-4 shadow-lg text-dark overflow-hidden">
                             <div class="modal-body p-4 text-center bg-white">
-                                <div class="text-danger mb-3">
-                                    <i class="fa-regular fa-circle-xmark fa-3x"></i>
+                                <div class="text-{% if appt.status == 'Pending' %}danger{% elif appt.status == 'Completed' %}success{% endif %} mb-3">
+                                    <i class="fa-regular fa-{% if appt.status == 'Pending' %}circle-xmark{% elif appt.status == 'Completed' %}check-circle{% endif %} fa-3x"></i>
+                                    
                                 </div>
-                                <h5 class="fw-bold text-dark mb-2">Cancel Service?</h5>
-                                <p class="text-muted small mb-4">Are you sure you want to drop your appointment slot for <strong class="text-dark">{{ appt.motorcycle_name }}</strong>?</p>
+                                <h5 class="fw-bold text-dark mb-2">
+                                    {% if appt.status == 'Pending' %}
+                                    Cancel Service?
+                                    {% elif appt.status == 'Completed' %}
+                                    Already Paid?
+                                    {% endif %}
+                                </h5>
+                                <p class="text-muted small mb-4">
+                                    {% if appt.status == 'Pending' %}
+                                    Are you sure you want to drop your appointment slot for 
+                                    {% elif appt.status == 'Completed' %}
+                                    Are you sure you already paid the service for
+                                    {% endif %}
+                                    <strong class="text-dark">{{ appt.motorcycle_name }}</strong>?</p>
                                 <div class="d-flex justify-content-center gap-2">
                                     <button type="button" class="btn btn-light rounded-pill fw-semibold px-3 fs-9" data-bs-dismiss="modal">Go back</button>
                                     <form action="{{ url_for('appointment.cancel', appointment_id=appt.id) }}" method="POST" class="m-0">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit" class="btn btn-danger rounded-pill fw-bold px-3 fs-9">Yes, Cancel</button>
+                                        <button type="submit" class="btn btn-{% if appt.status == 'Pending' %}danger{% elif appt.status == 'Completed' %}success{% endif %} rounded-pill fw-bold px-3 fs-9">
+                                            {% if appt.status == 'Pending' %}
+                                            Yes, Cancel
+                                            {% elif appt.status == 'Completed' %}
+                                            Yes, Already Paid
+                                            {% endif %}
+                                        </button>
                                     </form>
                                 </div>
                             </div>

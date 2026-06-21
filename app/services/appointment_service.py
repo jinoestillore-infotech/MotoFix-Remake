@@ -89,11 +89,28 @@ class AppointmentService:
         if not appt or appt['user_id'] != user_id:
             return {"success": False, "message": "Appointment not found or unauthorized access."}
 
-        if appt['status'] != 'Pending':
-            return {"success": False, "message": "Only pending appointments can be cancelled."}
+        if appt['status'] not in ['Pending', 'Completed']:
+            return {"success": False, "message": "Only pending and completed appointments can be processed."}
 
         try:
-            Appointment.update_status(appointment_id, 'Cancelled')
-            return {"success": True, "message": "Your appointment request has been cancelled."}
+            if appt['status'] == 'Pending':
+                Appointment.delete(appointment_id)
+
+                return {
+                    "success": True,
+                    "message": "Your appointment request has been cancelled."
+                }
+
+            elif appt['status'] == 'Completed':
+                Appointment.update_status(appointment_id, 'Paid')
+
+                return {
+                    "success": True,
+                    "message": "Your appointment has been marked as paid."
+                }
+
         except Exception as e:
-            return {"success": False, "message": f"Cancellation failed: {str(e)}"}
+            return {
+                "success": False,
+                "message": f"Operation failed: {str(e)}"
+    }
