@@ -22,7 +22,7 @@ class Database:
                     db_user = url.username
                     db_password = url.password
                     db_host = url.hostname
-                    db_port = url.port or 14433
+                    db_port = url.port
                     db_name = url.path[1:] if url.path else getattr(Config, 'DB_NAME', 'defaultdb')
 
                     cls._pool = mysql.connector.pooling.MySQLConnectionPool(
