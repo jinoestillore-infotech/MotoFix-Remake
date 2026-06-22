@@ -1,23 +1,68 @@
+import urllib.parse
+import os
 import mysql.connector
 from mysql.connector import pooling
 from app.config import Config
 
 class Database:
-    """Thread-Safe Connection Pool implementation for MySQL"""
+    """Thread-Safe Connection Pool implementation for MySQL with URI and SSL support"""
     _pool = None
 
     @classmethod
     def initialize(cls):
         if cls._pool is None:
             try:
-                cls._pool = mysql.connector.pooling.MySQLConnectionPool(
-                    pool_name="moto_pool",
-                    pool_size=10, 
-                    host=Config.DB_HOST,
-                    user=Config.DB_USER,
-                    password=Config.DB_PASSWORD,
-                    database=Config.DB_NAME
-                )
+                # Safely check for DATABASE_URL attribute to avoid AttributeError conflicts with config.py
+                db_url = getattr(Config, 'DATABASE_URL', os.environ.get('DATABASE_URL'))
+
+                if db_url and db_url.startswith("mysql://"):
+                    # Parse the URI cleanly (Aiven URI flow)
+                    url = urllib.parse.urlparse(db_url)
+                    db_user = url.username
+                    db_password = url.password
+                    db_host = url.hostname
+                    db_port = url.port or 3306
+                    db_name = url.path[1:] if url.path else getattr(Config, 'DB_NAME', 'defaultdb')
+
+                    cls._pool = mysql.connector.pooling.MySQLConnectionPool(
+                        pool_name="moto_pool",
+                        pool_size=10,
+                        host=db_host,
+                        port=db_port,
+                        user=db_user,
+                        password=db_password,
+                        database=db_name,
+                        ssl_mode='REQUIRED'  # Enforces SSL encryption required by cloud databases
+                    )
+                else:
+                    # Fallback to separate configuration parameters (Matches your .env & config.py setup)
+                    db_host = getattr(Config, 'DB_HOST', 'localhost')
+                    db_user = getattr(Config, 'DB_USER', 'root')
+                    db_password = getattr(Config, 'DB_PASSWORD', '')
+                    db_name = getattr(Config, 'DB_NAME', 'defaultdb')
+                    
+                    # Safely handle custom ports if provided in host string (e.g., host:port) or environment
+                    db_port = 3306
+                    if ":" in db_host:
+                        db_host, port_str = db_host.split(":", 1)
+                        db_port = int(port_str)
+                    else:
+                        db_port = int(os.environ.get('DB_PORT', 3306))
+
+                    # Automatically enforce SSL if connecting to an external cloud database (Aiven/Render)
+                    is_cloud_db = 'aivencloud.com' in db_host or 'render.com' in db_host
+                    ssl_args = {'ssl_mode': 'REQUIRED'} if is_cloud_db else {}
+
+                    cls._pool = mysql.connector.pooling.MySQLConnectionPool(
+                        pool_name="moto_pool",
+                        pool_size=10,
+                        host=db_host,
+                        port=db_port,
+                        user=db_user,
+                        password=db_password,
+                        database=db_name,
+                        **ssl_args
+                    )
             except mysql.connector.Error as err:
                 print(f"Database Initialization Error: {err}")
                 raise err
