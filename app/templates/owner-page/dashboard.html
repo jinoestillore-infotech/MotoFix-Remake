@@ -15,7 +15,7 @@
                 <i class="fas fa-user-shield me-1 text-dark"></i> Administrator: {{ session.get('first_name') }} {{ session.get('last_name') }}
             </span>
             <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-danger btn-sm rounded-pill px-3 py-1 fw-semibold fs-7">
-                <i class="fa-solid fa-sign-out-alt me-1"></i> Logout
+                <i class="fa-solid fa-sign-out-alt me-1"></i>
             </a>
         </div>
     </div>
@@ -86,6 +86,25 @@
     <!-- LAUNCHPAD MODULE CARDS FOR REDIRECTION TO OTHER PAGES -->
     <h4 class="fw-bold text-dark mb-3">Management Launchpad</h4>
     <div class="row g-4 mb-4">
+        <div class="col-12 col-md-6 col-lg-3">
+            <div class="card border border-light-subtle shadow-sm rounded-4 h-100 card-hover-effect">
+                <div class="card-body d-flex flex-column p-4">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="p-3 rounded-3 bg-success-subtle bg-opacity-25 text-success">
+                            <i class="fa-solid fa-cash-register fa-xl text-info"></i>
+                        </div>
+                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">Active</span>
+                    </div>
+                    <h5 class="fw-bold text-dark">Cashier Counter</h5>
+                    <p class="text-muted small flex-grow-1">Real-time walk-in sales desk. Search items dynamically, build tickets, compute taxes, track change amounts, and print physical receipt bills instantly.</p>
+                    <div class="mt-3">
+                        <a href="{{ url_for('cashier.view_terminal') }}" class="btn btn-dark rounded-pill w-100 fw-bold text-light shadow-sm">
+                            Open Counter
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
         <!-- Card 1: Parts Inventory Management -->
         <div class="col-12 col-md-6 col-lg-3">
             <div class="card border border-light-subtle shadow-sm rounded-4 h-100 card-hover-effect">
