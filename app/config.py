@@ -12,4 +12,4 @@ class Config:
     DB_NAME = os.environ["DB_NAME"]
 
     SESSION_COOKIE_HTTPONLY = True
-    SESSION_COOKIE_SECURE = False
+    SESSION_COOKIE_SECURE = True
